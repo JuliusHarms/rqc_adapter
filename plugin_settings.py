@@ -1,4 +1,5 @@
 from utils import plugins
+from utils.install import update_settings
 
 PLUGIN_NAME = 'RQC Adapter Plugin'
 DISPLAY_NAME = 'RQC Adapter'
@@ -26,6 +27,9 @@ class Rqc_adapterPlugin(plugins.Plugin):
 
 def install():
     Rqc_adapterPlugin.install()
+    update_settings(
+        file_path='plugins/rqc_adapter/install/settings.json'
+    )
 
 
 def hook_registry():
