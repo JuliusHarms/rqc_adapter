@@ -1,16 +1,8 @@
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
-import utils.setting_handler
-from core.models import SettingValue
 from plugins.rqc_adapter import forms
-from django.contrib import messages
-from django.shortcuts import render, redirect #!TEST
-import requests
-from datetime import datetime, timezone
-import logging
-from utils import migration_utils
-from core.models import Setting, SettingValue
+from plugins.rqc_adapter.utils import set_journal_id, set_journal_api_key
 
 
 def manager(request):
@@ -21,20 +13,13 @@ def manager(request):
     }
     return render(request, template, context)
 
-def set_journal_id(request):
+def handle_journal_id_settings_update(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     else:
-        journal_id_setting = SettingValue.objects.get(setting__name='rqc_journal_id')
-        journal_id_setting.value = request.data.get('journal_id')
-        journal_id_setting.save()
-    return redirect('rqc_adapter_manager')
-
-def set_journal_api_key(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    else:
-        journal_api_key_setting = SettingValue.objects.get(setting__name='rqc_journal_api_key')
-        journal_api_key_setting.value = request.data.get('api_key')
-        journal_api_key_setting.save()
+        # validate keys beforehand
+        journal_id = request.data.get('journal_id')
+        set_journal_id(journal_id)
+        journal_api_key = request.data.get('api_key')
+        set_journal_api_key(journal_api_key)
     return redirect('rqc_adapter_manager')
