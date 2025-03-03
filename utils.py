@@ -2,14 +2,15 @@ from typing import Union
 from datetime import datetime, timezone
 
 import requests
+from django.contrib.admin.templatetags.admin_list import result_list_tag
 from requests import RequestException
 
 from core.models import SettingValue
-from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL
+from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
 from plugins.rqc_adapter.plugin_settings import VERSION
 from utils.models import Version
 
-def call_mhs_apikeycheck(journal_id: str, api_key: str) -> Union[int, dict]:
+def call_mhs_apikeycheck(journal_id: str, api_key: str) -> dict:
     """
     Verify API key with the RQC service.
 
@@ -23,8 +24,18 @@ def call_mhs_apikeycheck(journal_id: str, api_key: str) -> Union[int, dict]:
 
     Raises:
         RequestException: If the request fails
+    TBD:
+        Display error to the user. Improve error handling...
     """
+
+    result = {
+        "success": False,
+        "http_status_code": None,
+        "message": None,
+    }
+
     try:
+        #database access somewhere else is better
         current_version = Version.objects.all().order_by('-Number').first()
         if not current_version:
             raise ValueError("No version information available")
@@ -40,19 +51,27 @@ def call_mhs_apikeycheck(journal_id: str, api_key: str) -> Union[int, dict]:
         response = requests.get(
             f'{API_BASE_URL}/mhs_apikeycheck/{journal_id}',
             headers=headers,
-            timeout=10
+            timeout=REQUEST_TIMEOUT
         )
 
-        response.raise_for_status()
-
+        result["http_status_code"] = response.status_code
+        result["success"] = response.ok
         try:
-            return response.json()
+            response_data = response.json()
+            if "user_message" in response_data:
+                result["message"] = response_data["user_message"]
+            elif "error" in response_data:
+                result["message"] = response_data["error"]
+            # Return info if json exists but no message - is this needed?
+            elif not response.ok:
+                result["message"] = f"Request failed: {response.reason}"
         except ValueError:
-            return response.status_code
+                result["message"] = f"Request failed and no error message was provided. Request status: {response.reason}"
+        return result
 
     except RequestException as e:
-        print(f"API request failed: {str(e)}")
-        raise
+        result["message"] = f"Connection Error: {str(e)}"
+        return result
 
 def set_journal_id(journal_id: str) -> dict:
     """
@@ -74,11 +93,11 @@ def set_journal_id(journal_id: str) -> dict:
         journal_id_setting = SettingValue.objects.get(setting__name='rqc_journal_id')
         journal_id_setting.value = journal_id
         journal_id_setting.save()
-        return {"status": "success", "message": "Journal ID updated successfully"}
+        return {"status": "success", "message": "Journal Id updated successfully"}
     except SettingValue.DoesNotExist:
-        return {"status": "error", "message": "Journal ID setting not found"}
+        return {"status": "error", "message": "Journal Id setting not found"}
     except Exception as e:
-        return {"status": "error", "message": f"Error updating journal ID: {str(e)}"}
+        return {"status": "error", "message": f"Error updating journal Id: {str(e)}"}
 
 def set_journal_api_key(journal_api_key: str) -> dict:
     """
