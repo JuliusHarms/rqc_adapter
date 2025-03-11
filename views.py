@@ -17,7 +17,6 @@ def manager(request):
     return render(request, template, {'form': form})
 
 def handle_journal_id_settings_update(request):
-    print("test")
     if request.method == 'POST':
         form = forms.RqcSettingsForm(request.POST)
         if form.is_valid():

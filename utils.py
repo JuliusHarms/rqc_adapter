@@ -1,8 +1,6 @@
-from typing import Union
 from datetime import datetime, timezone
 
 import requests
-from django.contrib.admin.templatetags.admin_list import result_list_tag
 from requests import RequestException
 
 from core.models import SettingValue
