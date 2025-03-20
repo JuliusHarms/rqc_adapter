@@ -10,6 +10,15 @@ SHORT_NAME = 'rqc_adapter'
 MANAGER_URL = 'rqc_adapter_manager'
 JANEWAY_VERSION = "1.3.8"
 
+# Workflow Settings
+IS_WORKFLOW_PLUGIN = True
+JUMP_URL = 'rqc_article'
+HANDSHAKE_URL = 'rqc_grading_articles'
+ARTICLE_PK_IN_HANDSHAKE_URL = True
+STAGE = 'rqc_adapter_plugin'
+KANBAN_CARD = ''
+DASHBOARD_TEMPLATE = 'rqc_adapter/dashboard.html'
+
 
 
 class Rqc_adapterPlugin(plugins.Plugin):
@@ -22,6 +31,11 @@ class Rqc_adapterPlugin(plugins.Plugin):
 
     version = VERSION
     janeway_version = JANEWAY_VERSION
+
+    # TBD workflow settings correct?
+    is_workflow_plugin = True
+    handshake_url = HANDSHAKE_URL
+    article_pk_in_handshake_url = ARTICLE_PK_IN_HANDSHAKE_URL
     
 
 
@@ -33,7 +47,11 @@ def install():
 
 
 def hook_registry():
-    Rqc_adapterPlugin.hook_registry()
+    # Rqc_adapterPlugin.hook_registry()
+    return {
+        'nav_block': {'module: plugins.rqc_adapter.hooks', 'function: render_reviewer_opting_form'},
+    }
+
 
 
 def register_for_events():
