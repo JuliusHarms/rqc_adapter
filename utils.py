@@ -25,51 +25,8 @@ def call_mhs_apikeycheck(journal_id: str, api_key: str) -> dict:
     TBD:
         Display error to the user. Improve error handling...
     """
-
-    result = {
-        "success": False,
-        "http_status_code": None,
-        "message": None,
-    }
-
-    try:
-        #database access somewhere else is better
-        current_version = Version.objects.all().order_by('-Number').first()
-        if not current_version:
-            raise ValueError("No version information available")
-
-        headers = {
-            'X-Rqc-Api-Version': API_VERSION,
-            'X-Rqc-Mhs-Version': f'Janeway {current_version.number}',
-            'X-Rqc-Mhs-Adapter': f'RQC-Adapter {VERSION}',
-            'X-Rqc-Time': datetime.now(timezone.utc).isoformat(timespec='seconds') + 'Z',
-            'Authorization': f'Bearer {api_key}',
-        }
-
-        response = requests.get(
-            f'{API_BASE_URL}/mhs_apikeycheck/{journal_id}',
-            headers=headers,
-            timeout=REQUEST_TIMEOUT
-        )
-
-        result["http_status_code"] = response.status_code
-        result["success"] = response.ok
-        try:
-            response_data = response.json()
-            if "user_message" in response_data:
-                result["message"] = response_data["user_message"]
-            elif "error" in response_data:
-                result["message"] = response_data["error"]
-            # Return info if json exists but no message - is this needed?
-            elif not response.ok:
-                result["message"] = f"Request failed: {response.reason}"
-        except ValueError:
-                result["message"] = f"Request failed and no error message was provided. Request status: {response.reason}"
-        return result
-
-    except RequestException as e:
-        result["message"] = f"Connection Error: {str(e)}"
-        return result
+    url = f'{API_BASE_URL}/mhs_apikeycheck/{journal_id}'
+    return call_rqc_api(url, api_key)
 
 def set_journal_id(journal_id: str) -> dict:
     """
@@ -120,8 +77,65 @@ def set_journal_api_key(journal_api_key: str) -> dict:
         return {"status": "error", "message": f"Error updating journal API key: {str(e)}"}
 
 
-def call_mhs_submission(journal_id: str, journal_api_key: str):
+def call_mhs_submission(journal_id: str, api_key: str, submission_id, post_data: str) -> dict:
     """
     TBD
     """
-    return
+    url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
+    return call_rqc_api(journal_id, api_key, use_post = True, post_data = post_data)
+
+
+
+def call_rqc_api(url: str, api_key: str, use_post = False, post_data = None) -> dict:
+    result = {
+        "success": False,
+        "http_status_code": None,
+        "message": None,
+    }
+
+    try:
+        #database access somewhere else is better
+        current_version = Version.objects.all().order_by('-Number').first()
+        if not current_version:
+            raise ValueError("No version information available")
+
+        headers = {
+            'X-Rqc-Api-Version': API_VERSION,
+            'X-Rqc-Mhs-Version': f'Janeway {current_version.number}',
+            'X-Rqc-Mhs-Adapter': f'RQC-Adapter {VERSION}',
+            'X-Rqc-Time': datetime.now(timezone.utc).isoformat(timespec='seconds') + 'Z',
+            'Authorization': f'Bearer {api_key}',
+        }
+
+        if use_post:
+            response = requests.post(
+                url,
+                json=post_data,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT
+            )
+        else:
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT
+            )
+
+        result["http_status_code"] = response.status_code
+        result["success"] = response.ok
+        try:
+            response_data = response.json()
+            if "user_message" in response_data:
+                result["message"] = response_data["user_message"]
+            elif "error" in response_data:
+                result["message"] = response_data["error"]
+            # Return info if json exists but no message - is this needed?
+            elif not response.ok:
+                result["message"] = f"Request failed: {response.reason}"
+        except ValueError:
+            result["message"] = f"Request failed and no error message was provided. Request status: {response.reason}"
+        return result
+
+    except RequestException as e:
+        result["message"] = f"Connection Error: {str(e)}"
+        return result
