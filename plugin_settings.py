@@ -13,7 +13,7 @@ JANEWAY_VERSION = "1.3.8"
 # Workflow Settings
 IS_WORKFLOW_PLUGIN = True
 JUMP_URL = 'rqc_article'
-HANDSHAKE_URL = 'rqc_grading_articles'
+HANDSHAKE_URL = 'rqc_adapter_grading_articles'
 ARTICLE_PK_IN_HANDSHAKE_URL = True
 STAGE = 'rqc_adapter_plugin'
 KANBAN_CARD = ''
@@ -49,7 +49,7 @@ def install():
 def hook_registry():
     # Rqc_adapterPlugin.hook_registry()
     return {
-        'nav_block': {'module: plugins.rqc_adapter.hooks', 'function: render_reviewer_opting_form'},
+    #     'nav_block': {'module: plugins.rqc_adapter.hooks', 'function: render_reviewer_opting_form'},
     }
 
 

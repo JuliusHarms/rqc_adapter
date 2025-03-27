@@ -5,5 +5,5 @@ from django.urls import re_path
 urlpatterns = [
     re_path(r'^manager/$', views.manager, name='rqc_adapter_manager'),
     re_path(r'^manager/handle_journal_settings_update$', views.handle_journal_id_settings_update, name='rqc_adapter_handle_journal_settings_update'),
-    re_path(r'^$', views.grading_articles, name = 'rqc_adapter_grading_articles'),
+    re_path(r'^$', views.grading_articles, name='rqc_adapter_grading_articles')
 ]
