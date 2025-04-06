@@ -47,46 +47,108 @@ def submit_article_for_grading(request, article_id):
         pk=article_id,
         journal=request.journal,
     )
-    # editor email etc.
-    # submission page
-    # title
-    # uid
 
-    # authorset -> for each
+    submission_data = {}
+
+    # interactive user get from request
+    # how to check if there is a user
+    if hasattr(request.user, 'id') and request.user.id is not None:
+        submission_data['interactive_user'] = request.user.email
+    else:
+        submission_data['interactive_user'] = ""
+
+    # submission page - redirect to the page from where the post request came from
+    # if interactive user is empty this should be emtpy aswell
+    if submission_data.get('interactive_user') is not None:
+        submission_data['mhs_submissionpage'] = request.META.get('HTTP_REFERER') # open redirect vulnerabilities?
+    else:
+        submission_data['mhs_submissionpage'] = ""
+
+    #title - length?
+    submission_data['title'] = article.title
+
+    # external uid
+    submission_data['external_uid'] = article_id
+    #visible uid - remove characters that cant appear in url
+    submission_data['visible_uid'] = article_id
+
+    # submission date check date time - utc?
+    submission_data['submitted'] = article.date_submitted
+
+    # authorset -> for each ----> ONLY corresponding auth
     # author email
     # author firstname
     # author lastname
     # orcid
     # ordernumber
-
-    authors = article.authors
-    print(authors)
+    author = article.correspondence_author
+    author_order = article.articleauthororder_set.all()
+    author_set = []
+    author_info = {
+            'email': author.email,
+            'firstname': author.first_name,
+            'lastname': author.last_name,
+            'orcid_id': author.orcid,
+            'order_number': author_order.filter(author=author).order
+    }
+    author_set.append(author_info)
+    submission_data['author_set'] = author_set
 
     # editor_assginemnt set -> for each
+    # editor assignments for each article
     # editor email
     # editor firstname
     # last name
     # ordcid
     # level
-
-
+    submission_data['editor_set'] = []
+    editor_assignments = article.editorassignment_set.all()
+    for editor_assignment in editor_assignments:
+        editor = editor_assignment.editor
+        editor_data = {
+            "email": editor.email,
+            "firstname": editor.first_name,
+            "lastname": editor.last_name,
+            "orcid_id": editor.orcid,
+            "level": 1  # TBD what about different levels
+        }
+        submission_data['editor_set'].append(editor_data)
 
     # reviewerset
-    # visibl id
-    # invited
-    # agreed
-    # expected
-    # submitted
-    # text
-        # attachments
-        # filename
-        # data
-        # is html
-    # suggested decision
-    # reviewer info
-        # email
-        # first name
-        # last name
-        # orc id
+    submission_data['review_set'] = []
+    review_assignments = article.reviewassignment_set.all()
+    num_reviews = 0
+    for review_assignment in review_assignments:
+        reviewer = review_assignment.reviewer
+        review_file = review_assignment.review_file
+        review_text = ""
+        for review_answer in review_assignment.review_form_answers(): #TBD whats going on with multiple answers
+            review_text = review_text + review_answer.edited_answer
+        review_data = {
+            "visible_id": num_reviews+1,
+            "invited": review_assignment.date_requested,
+            "agreed":  review_assignment.date_accepted,
+            "expected": review_assignment.date_due,
+            "submitted": review_assignment.date_complete, #correct?
+            "text": review_text,
+            "suggested_decision": "TBD",
+            "reviewer": {
+                "email": reviewer.email,
+                "firstname": reviewer.first_name,
+                "lastname": reviewer.last_name,
+                "orcid_id": reviewer.orcid
+            }
+        }
+        # handle attachments - there can only be one review file
+        # need to be handled in their own function i think..
+        if review_file is not None:
+            attachments = {
+                "filename": review_file.original_filename,
+                "data": "TBD",
+                "is_html": review_file.mime_type in ["text/html", "application/xhtml+xml"] #is the mime type correct?
+            }
+            review_data["attachments"] = attachments
+        submission_data['review_set'].append(review_data)
+
     # decision
     return
