@@ -1,7 +1,11 @@
+import base64
+import os
 from datetime import datetime, timezone
 
 import requests
 from requests import RequestException
+
+from django.conf import settings
 
 from core.models import SettingValue
 from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
@@ -139,3 +143,13 @@ def call_rqc_api(url: str, api_key: str, use_post = False, post_data = None) -> 
     except RequestException as e:
         result["message"] = f"Connection Error: {str(e)}"
         return result
+
+#TBD Error handling
+def encode_file_as_b64(file_uuid: str, article_id: str) -> str:
+    """
+    Encodes the file as a base64 binary string.
+    """
+    file_path = os.path.join(settings.BASE_DIR,'files','articles', article_id, file_uuid)
+    with open(file_path, "rb") as f:
+        encoded_file = base64.b64encode(f.read()).decode('utf-8')
+    return encoded_file
