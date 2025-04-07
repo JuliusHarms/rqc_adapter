@@ -1,5 +1,9 @@
+from plugins.rqc_adapter.utils import generate_random_salt
 from utils import plugins
 from utils.install import update_settings
+from journal.models import Journal
+from core.models import Setting, SettingValue
+
 
 PLUGIN_NAME = 'RQC Adapter Plugin'
 DISPLAY_NAME = 'RQC Adapter'
@@ -12,7 +16,7 @@ JANEWAY_VERSION = "1.3.8"
 
 # Workflow Settings
 IS_WORKFLOW_PLUGIN = True
-JUMP_URL = 'rqc_article'
+JUMP_URL = 'rqc_adapter_article'
 HANDSHAKE_URL = 'rqc_adapter_grading_articles'
 ARTICLE_PK_IN_HANDSHAKE_URL = True
 STAGE = 'rqc_adapter_plugin'
@@ -32,7 +36,7 @@ class Rqc_adapterPlugin(plugins.Plugin):
     version = VERSION
     janeway_version = JANEWAY_VERSION
 
-    # TBD workflow settings correct?
+    # TODO workflow settings correct?
     is_workflow_plugin = True
     handshake_url = HANDSHAKE_URL
     article_pk_in_handshake_url = ARTICLE_PK_IN_HANDSHAKE_URL
@@ -44,10 +48,19 @@ def install():
     update_settings(
         file_path='plugins/rqc_adapter/install/settings.json'
     )
+    # Generate a salt value for each journal
+    # TODO what if a new journal is created -> create a salt later when needed
+    journals = Journal.objects.all()
+    setting = Setting.objects.filter(name='rqc_journal_salt')
+    for journal in journals:
+        salt = generate_random_salt()
+        setting_value = SettingValue(setting=setting, value=salt, journal=journal)
+        setting_value.save()
+
 
 
 def hook_registry():
-    # Rqc_adapterPlugin.hook_registry()
+    Rqc_adapterPlugin.hook_registry()
     return {
     #     'nav_block': {'module: plugins.rqc_adapter.hooks', 'function: render_reviewer_opting_form'},
     }
@@ -56,3 +69,4 @@ def hook_registry():
 
 def register_for_events():
     pass
+
