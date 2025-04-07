@@ -7,7 +7,10 @@ from submission import models as submission_models
 
 from core.models import SettingValue
 from plugins.rqc_adapter import forms
-from plugins.rqc_adapter.utils import set_journal_id, set_journal_api_key
+from plugins.rqc_adapter.utils import set_journal_id, set_journal_api_key, encode_file_as_b64, \
+    convert_review_decision_to_rqc_format, get_editorial_decision, create_pseudo_address, has_salt, set_journal_salt
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision
+
 
 def manager(request):
     template = 'rqc_adapter/manager.html'
@@ -19,6 +22,7 @@ def manager(request):
         form = forms.RqcSettingsForm()
     return render(request, template, {'form': form})
 
+#TODO create new settingvalue if object doesnt exist yet
 def handle_journal_id_settings_update(request):
     if request.method == 'POST':
         form = forms.RqcSettingsForm(request.POST)
@@ -106,15 +110,16 @@ def submit_article_for_grading(request, article_id):
     for editor_assignment in editor_assignments:
         editor = editor_assignment.editor
         editor_data = {
-            "email": editor.email,
-            "firstname": editor.first_name,
-            "lastname": editor.last_name,
-            "orcid_id": editor.orcid,
-            "level": 1  # TBD what about different levels
+            'email': editor.email,
+            'firstname': editor.first_name,
+            'lastname': editor.last_name,
+            'orcid_id': editor.orcid,
+            'level': 1  # TODO what about different levels
         }
         submission_data['editor_set'].append(editor_data)
 
     # reviewerset
+    # TODO handle opted out reviewers
     submission_data['review_set'] = []
     review_assignments = article.reviewassignment_set.all()
     num_reviews = 0
@@ -122,33 +127,48 @@ def submit_article_for_grading(request, article_id):
         reviewer = review_assignment.reviewer
         review_file = review_assignment.review_file
         review_text = ""
-        for review_answer in review_assignment.review_form_answers(): #TBD whats going on with multiple answers
+        for review_answer in review_assignment.review_form_answers(): #TODO whats going on with multiple answers
             review_text = review_text + review_answer.edited_answer
         review_data = {
-            "visible_id": num_reviews+1,
-            "invited": review_assignment.date_requested,
-            "agreed":  review_assignment.date_accepted,
-            "expected": review_assignment.date_due,
-            "submitted": review_assignment.date_complete, #correct?
-            "text": review_text,
-            "suggested_decision": "TBD",
-            "reviewer": {
-                "email": reviewer.email,
-                "firstname": reviewer.first_name,
-                "lastname": reviewer.last_name,
-                "orcid_id": reviewer.orcid
-            }
+            'visible_id': num_reviews+1,
+            'invited': review_assignment.date_requested,
+            'agreed':  review_assignment.date_accepted,
+            'expected': review_assignment.date_due,
+            'submitted': review_assignment.date_complete, #TODO correct timing utc?
+            'text': review_text,
+            'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
         }
+        if review_assignment.reviewer.rqcrevieweroptingdecision.opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
+            reviewer = {
+                'email': reviewer.email,
+                'firstname': reviewer.first_name,
+                'lastname': reviewer.last_name,
+                'orcid_id': reviewer.orcid
+            }
+        else:
+            if not has_salt(request.journal):
+                salt = set_journal_salt(request.journal)
+            else:
+                salt = SettingValue.objects.get(setting__name='rqc_journal_salt').value
+            reviewer = {
+                'email': create_pseudo_address(reviewer.email,salt),
+                'firstname': '',
+                'lastname': '',
+                'orcid_id': ''
+            }
+        review_data['reviewer'] = reviewer
         # handle attachments - there can only be one review file
         # need to be handled in their own function i think..
+        # check for file being remote
         if review_file is not None:
             attachments = {
-                "filename": review_file.original_filename,
-                "data": "TBD",
-                "is_html": review_file.mime_type in ["text/html", "application/xhtml+xml"] #is the mime type correct?
+                'filename': review_file.original_filename,
+                'data': encode_file_as_b64(review_file.uuid_filename,article_id),
+                'is_html': review_file.mime_type in ["text/html"] #TODO is the mime type correct?
             }
-            review_data["attachments"] = attachments
+            review_data['attachments'] = attachments
         submission_data['review_set'].append(review_data)
 
     # decision
+    submission_data['decision'] = get_editorial_decision(article)
     return
