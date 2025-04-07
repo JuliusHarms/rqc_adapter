@@ -153,3 +153,22 @@ def encode_file_as_b64(file_uuid: str, article_id: str) -> str:
     with open(file_path, "rb") as f:
         encoded_file = base64.b64encode(f.read()).decode('utf-8')
     return encoded_file
+
+def convert_review_decision_to_rqc_format(decision_string: str) -> str:
+    """
+    Maps the string representation of the reviewers decision to the string representation in RQC.
+    """
+    match decision_string:
+        case 'Accept Without Revisions':
+            return 'ACCEPT'
+        case 'Minor Revisions Required':
+            return 'MINORREVISION'
+        case 'Major Revisions Required':
+            return 'MAJORREVISION'
+        case 'Reject':
+            return 'REJECT'
+        case _:
+            return ""
+
+
+
