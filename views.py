@@ -1,14 +1,14 @@
-from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
+from plugins.rqc_adapter.rqc_calls import call_mhs_submission
 from security import decorators
-from security.decorators import author_user_required
 from submission import models as submission_models
 
 from core.models import SettingValue
-from plugins.rqc_adapter import forms
-from plugins.rqc_adapter.utils import set_journal_id, set_journal_api_key, encode_file_as_b64, \
-    convert_review_decision_to_rqc_format, get_editorial_decision, create_pseudo_address, has_salt, set_journal_salt
+from plugins.rqc_adapter import forms, plugin_settings
+from plugins.rqc_adapter.plugin_settings import set_journal_id, set_journal_api_key, has_salt, set_journal_salt, \
+    get_journal_id, get_journal_api_key
+from plugins.rqc_adapter.utils import encode_file_as_b64, convert_review_decision_to_rqc_format, get_editorial_decision, create_pseudo_address
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision
 
 
@@ -38,20 +38,23 @@ def handle_journal_id_settings_update(request):
         form = forms.RqcSettingsForm(initial={'journal_id_field': journal_id, 'journal_api_key_field': journal_api_key})
         return render(request,'rqc_adapter/manager.html',{'form':form})
 
-def grading_articles(request):
-    print("Test")
-    template = 'rqc_adapter/manager.html'
-    return render(request, template)
 
+#TODO maybe save the data so for implicit calls it is not regenerated (except decision + additonal reviews)
+#TODO check if RQC size limits are respected
+#All one-line strings must be no longer than 2000 characters.
+#All multi-line strings (the review texts) must be no longer than 200000 characters.
+#Author lists must be no longer than 200 entries.
+#Other lists (reviews, editor assignments) must be no longer than 20 entries.
+#Attachments cannot be larger than 64 MB each.
 @decorators.has_journal
 @decorators.production_user_or_editor_required
 def submit_article_for_grading(request, article_id):
     article = get_object_or_404(
         submission_models.Article,
         pk=article_id,
-        journal=request.journal,
+        journal=request.journal,  #TODO?
     )
-
+    journal = article.journal #TODO ?
     submission_data = {}
 
     # interactive user get from request
@@ -62,7 +65,7 @@ def submit_article_for_grading(request, article_id):
         submission_data['interactive_user'] = ""
 
     # submission page - redirect to the page from where the post request came from
-    # if interactive user is empty this should be emtpy aswell
+    # if interactive user is empty this should be emtpy as well
     if submission_data.get('interactive_user') is not None:
         submission_data['mhs_submissionpage'] = request.META.get('HTTP_REFERER') # open redirect vulnerabilities?
     else:
@@ -146,8 +149,8 @@ def submit_article_for_grading(request, article_id):
                 'orcid_id': reviewer.orcid
             }
         else:
-            if not has_salt(request.journal):
-                salt = set_journal_salt(request.journal)
+            if not has_salt(journal):
+                salt = set_journal_salt(journal)
             else:
                 salt = SettingValue.objects.get(setting__name='rqc_journal_salt').value
             reviewer = {
@@ -160,7 +163,7 @@ def submit_article_for_grading(request, article_id):
         # handle attachments - there can only be one review file
         # need to be handled in their own function i think..
         # check for file being remote
-        if review_file is not None:
+        if review_file is not None and not review_file.is_remote: #TODO handle remote files
             attachments = {
                 'filename': review_file.original_filename,
                 'data': encode_file_as_b64(review_file.uuid_filename,article_id),
@@ -170,5 +173,32 @@ def submit_article_for_grading(request, article_id):
         submission_data['review_set'].append(review_data)
 
     # decision
-    submission_data['decision'] = get_editorial_decision(article)
-    return
+    submission_data['decision'] = get_editorial_decision(article) #TODO redo revision request by querying for revisionrequest objects
+
+    value = call_mhs_submission(journal_id = get_journal_id(journal), api_key= get_journal_api_key(journal), submission_id= article_id, post_data= submission_data)
+    return value
+
+
+def rqc_grading_articles(request):
+    """
+    Displays a list of articles in the RQC Grading stage.
+    :param request: HttpRequest
+    :return: HttpResponse
+    """
+    article_filter = request.GET.get('filter', None)
+    articles_in_rqc_grading = submission_models.Article.objects.filter(
+        journal=request.journal,
+        stage=plugin_settings.STAGE,
+    )
+    template = 'rqc_adapter/rqc_grading_articles.html'
+    context = {
+        'articles_in_rqc_grading': articles_in_rqc_grading,
+        'filter': article_filter,
+    }
+    return render(request, template, context)
+
+
+def rqc_article_grading(article_id, request):
+    template = 'rqc_adapter/rqc_article_grading.html'
+    context = {}
+    return render(request, template, context)
