@@ -1,0 +1,19 @@
+{% extends "admin/core/base.html" %}
+{% load foundation %}
+
+{% block title %}Review Quality Collector{% endblock %}
+{% block body %}
+
+<div class="box">
+    <div class="title-area">
+        <h1>Review Quality Collector (RQC)</h1>
+    </div>
+    <div class="content">
+        <form method="POST" action="{% url 'rqc_adapter_submit_article_for_grading' article.pk %}">
+            {% csrf_token %}
+            <p>You can press the button below in order to send the article to RQC for grading. You will then be redirected to RQC.</p>
+            <button type="submit" class="button">Send to RQC</button>
+        </form>
+    </div>
+</div>
+{% endblock body %}
