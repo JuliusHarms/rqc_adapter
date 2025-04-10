@@ -41,7 +41,7 @@
     "setting":
     {
       "name": "rqc_journal_salt",
-      "description": "The journal's salt value that is used for anonymising e-mail addresses.",
+      "description": "The journal's salt value that is used for anonymising e-mail addresses. WARNING: This value should not be changed!",
       "is_translatable": false,
       "pretty_name": "RQC Journal Salt (PLUGIN)",
       "type": "char"
