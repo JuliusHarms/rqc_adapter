@@ -45,9 +45,12 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
 
     try:
         #database access somewhere else is better
-        current_version = Version.objects.all().order_by('-number').first()
-        if not current_version:
-            raise ValueError("No version information available")
+        try:
+            current_version = Version.objects.all().order_by('-number').first()
+            if not current_version:
+                raise ValueError("No version information available")
+        except Exception as db_error:
+            raise ValueError(f"Error retrieving version information: {db_error}")
 
         headers = {
             'X-Rqc-Api-Version': API_VERSION,
