@@ -45,7 +45,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
 
     try:
         #database access somewhere else is better
-        current_version = Version.objects.all().order_by('-Number').first()
+        current_version = Version.objects.all().order_by('-number').first()
         if not current_version:
             raise ValueError("No version information available")
 
