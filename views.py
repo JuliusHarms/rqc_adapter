@@ -8,7 +8,7 @@ from submission import models as submission_models
 from core.models import SettingValue
 from plugins.rqc_adapter import forms, plugin_settings
 from plugins.rqc_adapter.plugin_settings import set_journal_id, set_journal_api_key, has_salt, set_journal_salt, \
-    get_journal_id, get_journal_api_key, has_journal_id, has_journal_api_key
+    get_journal_id, get_journal_api_key, has_journal_id, has_journal_api_key, get_salt
 from plugins.rqc_adapter.utils import encode_file_as_b64, convert_review_decision_to_rqc_format, get_editorial_decision, create_pseudo_address
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision
 
@@ -30,8 +30,10 @@ def handle_journal_settings_update(request):
     journal = request.journal
     if request.method == 'POST':
         form = forms.RqcSettingsForm(request.POST)
+        print(form.is_valid())
         if form.is_valid():
             journal_id = form.cleaned_data['journal_id_field']
+            print(journal_id)
             set_journal_id(journal_id, journal)
             journal_api_key = form.cleaned_data['journal_api_key_field']
             set_journal_api_key(journal_api_key, journal)
@@ -130,7 +132,7 @@ def submit_article_for_grading(request, article_id):
     # reviewerset
     # TODO handle opted out reviewers
     submission_data['review_set'] = []
-    review_assignments = article.reviewassignment_set.all()
+    review_assignments = article.reviewassignment_set.all() #TODO what if there is not reviewassignment -> no call should be possible os that guarenteed?
     num_reviews = 0
     for review_assignment in review_assignments:
         reviewer = review_assignment.reviewer
@@ -140,7 +142,7 @@ def submit_article_for_grading(request, article_id):
              if review_answer.answer is not None:
                 review_text = review_text + review_answer.answer
         review_data = {
-            'visible_id': num_reviews+1,
+            'visible_id': num_reviews+1, #TODO is that ok?
             'invited': review_assignment.date_requested,
             'agreed':  review_assignment.date_accepted,
             'expected': review_assignment.date_due,
@@ -149,7 +151,11 @@ def submit_article_for_grading(request, article_id):
             'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
             'is_html': 'true',  # review_file.mime_type in ["text/html"]  # TODO is the mime type correct?
         }
-        if review_assignment.reviewer.rqcrevieweroptingdecision.opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
+        try:
+            opting_status = review_assignment.reviewer.rqcrevieweroptingdecision.opting_status
+        except (AttributeError, RQCReviewerOptingDecision.DoesNotExist):
+            opting_status = None
+        if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:   #TODO treat no opting decision as opt out
             reviewer = {
                 'email': reviewer.email,
                 'firstname': reviewer.first_name,
@@ -160,7 +166,7 @@ def submit_article_for_grading(request, article_id):
             if not has_salt(journal):
                 salt = set_journal_salt(journal)
             else:
-                salt = SettingValue.objects.get(setting__name='rqc_journal_salt').value
+                salt = get_salt(journal)
             reviewer = {
                 'email': create_pseudo_address(reviewer.email,salt),
                 'firstname': '',
@@ -172,7 +178,7 @@ def submit_article_for_grading(request, article_id):
         # need to be handled in their own function i think..
         # check for file being remote
         attachment_set = []
-        # TODO attachments don't work yet via rqc
+        # TODO attachments do not work yet on the side of RQC
         """
         if review_file is not None and not review_file.is_remote: #TODO handle remote files
             attachment_set.append({
@@ -185,7 +191,7 @@ def submit_article_for_grading(request, article_id):
 
     # decision
     submission_data['decision'] = get_editorial_decision(article) #TODO redo revision request by querying for revisionrequest objects
-
+    print(submission_data) #TODO remove
     value = call_mhs_submission(journal_id = get_journal_id(journal), api_key= get_journal_api_key(journal), submission_id= article_id, post_data= submission_data)
     return value
 
@@ -201,18 +207,10 @@ def rqc_grading_articles(request):
         journal=request.journal,
         stage=plugin_settings.STAGE,
     )
-    titles = articles_in_rqc_grading.values_list('title')
-    print(titles)
-    articles = submission_models.Article.objects.all()
     template = 'rqc_adapter/rqc_grading_articles.html'
-    all_titles = articles.values_list('title')
-    print(all_titles)
     context = {
         'articles_in_rqc_grading': articles_in_rqc_grading,
         'filter': article_filter,
-        'articles': articles,
-        'titles': titles,
-        'all_titles': all_titles,
     }
     return render(request, template, context)
 
