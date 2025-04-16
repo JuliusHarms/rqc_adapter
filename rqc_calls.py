@@ -56,10 +56,9 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
             'X-Rqc-Api-Version': API_VERSION,
             'X-Rqc-Mhs-Version': f'Janeway {current_version.number}',
             'X-Rqc-Mhs-Adapter': f'RQC-Adapter {VERSION}',
-            'X-Rqc-Time': datetime.now(timezone.utc).isoformat(timespec='seconds') + 'Z',
+            'X-Rqc-Time': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
             'Authorization': f'Bearer {api_key}',
         }
-
         if use_post:
             response = requests.post(
                 url,
@@ -73,7 +72,6 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
                 headers=headers,
                 timeout=REQUEST_TIMEOUT
             )
-
         result["http_status_code"] = response.status_code
         result["success"] = response.ok
         try:
