@@ -1,7 +1,7 @@
 from django import forms
 from django.core.validators import RegexValidator
 
-from plugins.rqc_adapter.utils import call_mhs_apikeycheck
+from plugins.rqc_adapter.rqc_calls import call_mhs_apikeycheck
 
 
 class DummyManagerForm(forms.Form):
@@ -9,7 +9,12 @@ class DummyManagerForm(forms.Form):
 
 class RqcSettingsForm(forms.Form):
     journal_id_field = forms.IntegerField(error_messages={'invalid': 'Journal ID must be a number'})
-    journal_api_key_field = forms.CharField(max_length=64, min_length=1, validators=[RegexValidator(regex='^[0-9A-Za-z]$',message='The API key must only contain alphanumeric characters.')])
+    journal_api_key_field = forms.CharField(
+        max_length=64, min_length=1,
+        validators=[
+            RegexValidator(
+                regex='^[0-9A-Za-z]+$',
+                message='The API key must only contain alphanumeric characters.')])
 
     #Validate submitted journal_id and api_key together
     #should there be an option to only submit one or the other?
