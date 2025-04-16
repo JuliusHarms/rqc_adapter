@@ -41,14 +41,21 @@ class Rqc_adapterPlugin(plugins.Plugin):
     handshake_url = HANDSHAKE_URL
     article_pk_in_handshake_url = ARTICLE_PK_IN_HANDSHAKE_URL
     
-
-
+# TODO log salt value incase of accidental deletion - or privacy
+# wer hat zugriff auf die log daten
+# logging best practices
+# TODO logging in general
+# TODO if a submission is in the queue and a new call is made update the submission in
+# the queue and then refresh the 10 tries
+# TODO editable by none for the salt setting ?
+# TODO look at janway 1.8 what new features will be added
 def install():
     Rqc_adapterPlugin.install()
     update_settings(
         file_path='plugins/rqc_adapter/install/settings.json'
     )
-    # Generate a salt value for each journal
+    # Generates a salt value for each journal
+    # TODO check salt values for uniqueness
     # TODO what if a new journal is created -> create a salt later when needed
     journals = Journal.objects.all()
     setting = Setting.objects.get(name='rqc_journal_salt')
@@ -56,7 +63,6 @@ def install():
         salt = generate_random_salt()
         setting_value = SettingValue(setting=setting, value=salt, journal=journal)
         setting_value.save()
-
 
 
 def hook_registry():
@@ -90,10 +96,12 @@ def has_salt(journal):
     param: journal: Journal object
     return: boolean
     """
-    return SettingValue.objects.filter(setting='rqc_journal_salt', journal=journal).exists()
+    return SettingValue.objects.filter(setting__name='rqc_journal_salt', journal=journal).exists()
 
+def get_salt(journal):
+    return SettingValue.objects.get(setting__name='rqc_journal_salt', journal=journal).value
 
-def set_journal_id(journal_id: str, journal: Journal) -> dict:
+def set_journal_id(journal_id: int, journal: Journal) -> dict:
     """
     Set the journal id.
 
@@ -105,7 +113,7 @@ def set_journal_id(journal_id: str, journal: Journal) -> dict:
     :raises
         Setting.DoesNotExist: If the setting doesn't exist
     """
-    if not journal_id or not isinstance(journal_id, str):
+    if not journal_id or not isinstance(journal_id, int):
         return {"status": "error", "message": "Invalid journal ID"}
 
     try:
@@ -118,11 +126,16 @@ def set_journal_id(journal_id: str, journal: Journal) -> dict:
     except Exception as e:
         return {"status": "error", "message": f"Error updating journal Id: {str(e)}"}
 
+def has_journal_id(journal: Journal) -> bool:
+    journal_id_setting = Setting.objects.get(name='rqc_journal_id')
+    return SettingValue.objects.filter(setting=journal_id_setting, journal=journal).exists()
+
 def get_journal_id(journal: Journal) -> str:
     """
     TODO - errors
     """
-    return SettingValue.objects.get(setting='rqc_journal_id', journal=journal).value
+    journal_id_setting = Setting.objects.get(name='rqc_journal_id')
+    return SettingValue.objects.get(setting=journal_id_setting, journal=journal).value
 
 def set_journal_api_key(journal_api_key: str, journal: Journal) -> dict:
     """
@@ -152,4 +165,9 @@ def get_journal_api_key(journal: Journal) -> str:
     """
     TODO errors
     """
-    return SettingValue.objects.get(name='rqc_journal_api_key', journal=journal).value
+    journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
+    return SettingValue.objects.get(setting=journal_api_key_setting, journal=journal).value
+
+def has_journal_api_key(journal: Journal) -> bool:
+    journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
+    return SettingValue.objects.filter(setting=journal_api_key_setting, journal=journal).exists()
