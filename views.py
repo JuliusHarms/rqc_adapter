@@ -1,3 +1,4 @@
+from django.core.checks import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
 from journal.models import Journal
@@ -30,10 +31,8 @@ def handle_journal_settings_update(request):
     journal = request.journal
     if request.method == 'POST':
         form = forms.RqcSettingsForm(request.POST)
-        print(form.is_valid())
         if form.is_valid():
             journal_id = form.cleaned_data['journal_id_field']
-            print(journal_id)
             set_journal_id(journal_id, journal)
             journal_api_key = form.cleaned_data['journal_api_key_field']
             set_journal_api_key(journal_api_key, journal)
@@ -226,3 +225,31 @@ def rqc_grade_article_reviews(request, article_id):
         'article': article,
     }
     return render(request, template, context)
+
+# TODO add reviewer opting
+# TODO should a user be able to manually enter the url and change opting status?
+# TODO check user login?
+def reviewer_opting_form(request):
+    template = 'rqc_adapter/reviewer_opting_form.html'
+    try:
+        initial_value = RQCReviewerOptingDecision.objects.get(reviewer=request.user).opting_status
+    except RQCReviewerOptingDecision.DoesNotExist:
+        initial_value = RQCReviewerOptingDecision.OptingChoices.OPT_IN
+    form = forms.ReviewerOptingForm(initial={'status_selection_field': initial_value})
+    return render(request, template, {'form': form})
+#
+# TODO get user and opting submission info
+# TODO ? @login_required
+# TODO what if there is no logged in user?
+# TODO add info messages for other settings udapted
+# TODO check if user is a reviewer!!!
+def set_reviewer_opting_status(request):
+    if request.method == 'POST':
+        form = forms.ReviewerOptingForm(request.POST)
+        if form.is_valid():
+            opting_status = form.cleaned_data['status_selection_field']
+            user = request.user
+            current_status, created = RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, opting_status=opting_status)
+            return redirect('rqc_adapter_reviewer_opting_form')
+    else:
+        return redirect('rqc_adapter_reviewer_opting_form')
