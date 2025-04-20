@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import RegexValidator
 
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision
 from plugins.rqc_adapter.rqc_calls import call_mhs_apikeycheck
 
 
@@ -33,3 +34,8 @@ class RqcSettingsForm(forms.Form):
             except Exception as e:
                 raise forms.ValidationError("Unable to verify API key")
         return cleaned_data
+
+class ReviewerOptingForm(forms.Form):
+    status_selection_field = forms.ChoiceField(choices=[
+        (RQCReviewerOptingDecision.OptingChoices.OPT_IN, "Yes, take part in RQC"),
+         (RQCReviewerOptingDecision.OptingChoices.OPT_OUT, "No, opt out from RQC")])
