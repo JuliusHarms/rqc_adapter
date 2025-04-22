@@ -127,12 +127,12 @@ def fetch_post_data(request, article, article_id, journal):
     submission_data['title'] = article.title
 
     # external uid
-    submission_data['external_uid'] = article_id
+    submission_data['external_uid'] = str(article_id)
     # visible uid - remove characters that cant appear in url
-    submission_data['visible_uid'] = article_id
+    submission_data['visible_uid'] = str(article_id)
 
-    # submission date check date time - utc?
-    submission_data['submitted'] = article.date_submitted
+    # submission date check date time - utc
+    submission_data['submitted'] = article.date_submitted.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     # authorset -> for each ----> ONLY corresponding auth
     # author email
@@ -145,9 +145,9 @@ def fetch_post_data(request, article, article_id, journal):
     author_set = []
     author_info = {
         'email': author.email,
-        'firstname': author.first_name,
-        'lastname': author.last_name,
-        'orcid_id': author.orcid,
+        'firstname': author.first_name if author.first_name else "",
+        'lastname': author.last_name, #TODO what if this is empty? then a problem
+        'orcid_id': author.orcid if author.orcid else "",
         'order_number': author_order.get(author=author).order  # TODO what if article,author is not unique
     }
     author_set.append(author_info)
@@ -166,9 +166,9 @@ def fetch_post_data(request, article, article_id, journal):
         editor = editor_assignment.editor
         editor_data = {
             'email': editor.email,
-            'firstname': editor.first_name,
+            'firstname': editor.first_name if editor.first_name else "",
             'lastname': editor.last_name,
-            'orcid_id': editor.orcid,
+            'orcid_id': editor.orcid if editor.orcid else "",
             'level': 1  # TODO what about different levels
         }
         submission_data['editor_set'].append(editor_data)
@@ -186,11 +186,11 @@ def fetch_post_data(request, article, article_id, journal):
             if review_answer.answer is not None:
                 review_text = review_text + review_answer.answer
         review_data = {
-            'visible_id': num_reviews + 1,  # TODO is that ok?
-            'invited': review_assignment.date_requested,
-            'agreed': review_assignment.date_accepted,
-            'expected': review_assignment.date_due,
-            'submitted': review_assignment.date_complete,  # TODO correct timing utc?
+            'visible_id': str(num_reviews + 1),  # TODO is that ok?
+            'invited': review_assignment.date_requested.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'agreed': review_assignment.date_accepted.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'expected': review_assignment.date_due.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'submitted': review_assignment.date_complete.strftime('%Y-%m-%dT%H:%M:%SZ'),  # TODO correct timing utc?
             'text': review_text,
             'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
             'is_html': 'true',  # review_file.mime_type in ["text/html"]  # TODO is the mime type correct?
@@ -202,9 +202,9 @@ def fetch_post_data(request, article, article_id, journal):
         if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:  # TODO treat no opting decision as opt out
             reviewer = {
                 'email': reviewer.email,
-                'firstname': reviewer.first_name,
+                'firstname': reviewer.first_name if reviewer.first_name else "",
                 'lastname': reviewer.last_name,
-                'orcid_id': reviewer.orcid
+                'orcid_id': reviewer.orcid if reviewer.orcid else "",
             }
         else:
             if not has_salt(journal):
