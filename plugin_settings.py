@@ -1,15 +1,16 @@
+from events.logic import Events
 from plugins.rqc_adapter.utils import generate_random_salt
 from utils import plugins
 from utils.install import update_settings
 from journal.models import Journal
 from core.models import Setting, SettingValue
-
+from events import logic as events_logic
+from plugins.rqc_adapter.config import VERSION
 
 PLUGIN_NAME = 'RQC Adapter Plugin'
 DISPLAY_NAME = 'RQC Adapter'
 DESCRIPTION = 'This plugin connects Janeway to the RQC API, allowing it to report review data for grading and inclusion in reviewers receipts.'
 AUTHOR = 'Julius Harms'
-VERSION = '0.1'
 SHORT_NAME = 'rqc_adapter'
 MANAGER_URL = 'rqc_adapter_manager'
 JANEWAY_VERSION = "1.3.8"
@@ -40,7 +41,7 @@ class Rqc_adapterPlugin(plugins.Plugin):
     is_workflow_plugin = True
     handshake_url = HANDSHAKE_URL
     article_pk_in_handshake_url = ARTICLE_PK_IN_HANDSHAKE_URL
-    
+
 # TODO log salt value incase of accidental deletion - or privacy
 # wer hat zugriff auf die log daten
 # logging best practices
@@ -49,6 +50,7 @@ class Rqc_adapterPlugin(plugins.Plugin):
 # the queue and then refresh the 10 tries
 # TODO editable by none for the salt setting ?
 # TODO look at janway 1.8 what new features will be added
+# TODO show something in the RQC Box if no role relative action is avaiable
 def install():
     Rqc_adapterPlugin.install()
     update_settings(
@@ -74,8 +76,38 @@ def hook_registry():
 
 # TODO register for review_complete, article_declined, article accepted, revisions requested
 # TODO test out what happens if you request revisions on an article
+# TODO difference between
 def register_for_events():
-    pass
+    from plugins.rqc_adapter.rqc_calls import implicit_call_mhs_submission
+    events_logic.Events.register_for_event(
+        Events.ON_REVIEW_COMPLETE,
+        implicit_call_mhs_submission,
+    )
+
+    events_logic.Events.register_for_event(
+        Events.ON_REVIEW_CLOSED,
+        implicit_call_mhs_submission,
+    )
+
+    events_logic.Events.register_for_event(
+        Events.ON_ARTICLE_ACCEPTED,
+        implicit_call_mhs_submission,
+    )
+
+    events_logic.Events.register_for_event(
+        Events.ON_ARTICLE_DECLINED,
+        implicit_call_mhs_submission,
+    )
+
+    events_logic.Events.register_for_event(
+        Events.ON_ARTICLE_UNDECLINED,
+        implicit_call_mhs_submission,
+    )
+
+    events_logic.Events.register_for_event(
+        Events.ON_REVISIONS_REQUESTED,
+        implicit_call_mhs_submission,
+    )
 
 
 def set_journal_salt(journal):

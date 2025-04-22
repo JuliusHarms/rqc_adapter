@@ -7,9 +7,9 @@ from core.janeway_global_settings import AUTH_USER_MODEL
 
 class RQCReviewerOptingDecision(models.Model):
     class OptingChoices(models.IntegerChoices):
-        UNDEFINED = 30, "RQC_OPTING_STATUS_UNDEFINED"
-        OPT_IN = 31, "RQC_OPTING_STATUS_OPT_IN"
-        OPT_OUT = 32, "RQC_OPTING_STATUS_OPT_OUT"
+        UNDEFINED = 30, ""
+        OPT_IN = 31, "Yes, take part in RQC"
+        OPT_OUT = 32, "No, opt out from RQC"
 
     opting_status = models.IntegerField(choices=OptingChoices.choices, default=OptingChoices.UNDEFINED)
     opting_date = models.DateTimeField(auto_now_add=True)
@@ -18,9 +18,9 @@ class RQCReviewerOptingDecision(models.Model):
     @property
     def is_valid(self):
         """
-        Return True if the opting decision is valid for the current UTC year.
+        Return true if the opting decision is valid for the current UTC year.
         """
-        return self.opting_date.year == datetime.now(timezone.utc).year #utc?
+        return self.opting_date.year == datetime.now(timezone.utc).year
 
     class Meta:
         verbose_name = "RQC Opting Decision"
