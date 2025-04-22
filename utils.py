@@ -50,15 +50,15 @@ def get_editorial_decision(article):
         return 'ACCEPTED'
     elif article.date_declined is not None: #TODO correct?
         return 'REJECTED'
-    try:
-        revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first() #TODO get the most recent one?
-        if revision_request.type == 'minor_revisions':
-            return 'MINORREVISION'
-        else:
-            return 'MAJORREVISION'
-    except RevisionRequest.DoesNotExist:
-        return ''
-
+    else:
+        try:
+            revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first() #TODO get the most recent one?
+            if revision_request.type == 'minor_revisions':
+                return 'MINORREVISION'
+            else:
+                return 'MAJORREVISION'
+        except RevisionRequest.DoesNotExist:
+            return ''
 
 def create_pseudo_address(email, salt):
     """
