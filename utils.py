@@ -26,13 +26,13 @@ def convert_review_decision_to_rqc_format(decision_string: str) -> str:
     Maps the string representation of the reviewers decision to the string representation in RQC.
     """
     match decision_string:
-        case 'Accept Without Revisions':
+        case 'accept':
             return 'ACCEPT'
-        case 'Minor Revisions Required':
+        case 'minor_revisions':
             return 'MINORREVISION'
-        case 'Major Revisions Required':
+        case 'major_revisions':
             return 'MAJORREVISION'
-        case 'Reject':
+        case 'reject':
             return 'REJECT'
         case _:
             return ''
