@@ -7,6 +7,7 @@ import string
 from django.conf import settings
 
 from core.models import SettingValue
+from review.models import RevisionRequest
 
 
 #TODO Error handling
@@ -45,18 +46,18 @@ def get_editorial_decision(article):
     :param article: Article object
     :return string of the editorial decision
     """
-    stages = article.stage_log_set.all().order_by('-date_time')
-    for stage in stages:
-        if stage.stage_to == 'Accepted':
-            return 'ACCEPTED'
-        elif stage.stage_to == 'Rejected':
-            return 'REJECTED'
-        elif stage.strage_from == 'Under Revisions' and stage.stage_to == 'Under Review':
-            return 'MAJORREVISION'
-        elif stage.stage_to == 'Under Revisions':  #TODO default assumption minor revision reasonable?
+    if article.is_accepted:
+        return 'ACCEPTED'
+    elif article.date_declined is not None: #TODO correct?
+        return 'REJECTED'
+    try:
+        revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first() #TODO get the most recent one?
+        if revision_request.type == 'minor_revisions':
             return 'MINORREVISION'
         else:
-            return ''
+            return 'MAJORREVISION'
+    except RevisionRequest.DoesNotExist:
+        return ''
 
 
 def create_pseudo_address(email, salt):
