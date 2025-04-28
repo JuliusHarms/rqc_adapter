@@ -1,6 +1,7 @@
 from datetime import timezone, datetime
 
 from django.db import models
+from pyasn1.type.univ import Choice
 
 from core.janeway_global_settings import AUTH_USER_MODEL
 
@@ -25,3 +26,17 @@ class RQCReviewerOptingDecision(models.Model):
     class Meta:
         verbose_name = "RQC Opting Decision"
         verbose_name_plural = "RQC Opting Decisions"
+
+
+class RQCDelayedCall(models.Model):
+    tries = models.IntegerField(default=0)
+    article = models.ForeignKey("Article", on_delete=models.CASCADE)  # TODO cascade? probably yes but if reviews are holy maybe i should save the call data and then submit to rqc anyway
+    user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
+    retry_time = models.DateTimeField()
+    failure_reason = models.TextField()
+    @property
+    def is_valid(self):
+        if self.tries >= 10:
+            return False
+        return True
+
