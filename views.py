@@ -1,3 +1,5 @@
+from http.client import HTTPResponse
+
 from django.core.checks import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -58,16 +60,21 @@ def handle_journal_settings_update(request):
 @decorators.has_journal
 @decorators.production_user_or_editor_required
 def submit_article_for_grading(request, article_id):
+    referer = request.META.get('HTTP_REFERER')
     article = get_object_or_404(
         submission_models.Article,
         pk=article_id,
         journal=request.journal,  #TODO?
     )
     journal = article.journal #TODO ?
-    post_data = fetch_post_data(request, article, article_id, journal)
-    value = call_mhs_submission(journal_id=get_journal_id(journal), api_key=get_journal_api_key(journal),
-                                submission_id=article_id, post_data=post_data)
-    return value
+    user = request.user
+    mhs_submissionpage = request.META.get('HTTP_REFERER')
+    post_data = fetch_post_data(user, article, article_id, journal, mhs_submissionpage)
+    response = call_mhs_submission(journal_id=get_journal_id(journal), api_key=get_journal_api_key(journal),
+                                submission_id=article_id, post_data=post_data) #Mode journal_id, journal_api_key?
+    print(response)
+    # TODO handle errors
+    return redirect(referer)
 
 
 def rqc_grading_articles(request):
