@@ -1,6 +1,8 @@
+from datetime import timedelta, timezone
 from http.client import HTTPResponse
+from django.utils.timezone import now
 
-from django.core.checks import messages
+from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
 from journal.models import Journal
@@ -13,7 +15,7 @@ from plugins.rqc_adapter import forms, plugin_settings
 from plugins.rqc_adapter.plugin_settings import set_journal_id, set_journal_api_key, has_salt, set_journal_salt, \
     get_journal_id, get_journal_api_key, has_journal_id, has_journal_api_key, get_salt
 from plugins.rqc_adapter.utils import encode_file_as_b64, convert_review_decision_to_rqc_format, get_editorial_decision, create_pseudo_address
-from plugins.rqc_adapter.models import RQCReviewerOptingDecision
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall
 
 
 def manager(request):
@@ -73,8 +75,30 @@ def submit_article_for_grading(request, article_id):
     response = call_mhs_submission(journal_id=get_journal_id(journal), api_key=get_journal_api_key(journal),
                                 submission_id=article_id, post_data=post_data) #Mode journal_id, journal_api_key?
     print(response)
-    # TODO handle errors
-    return redirect(referer)
+    # TODO handle errors and status response:
+    #TODO add messages in templates
+    # TODO what if no message?
+    if not response['success']:
+        match response['http_status_code']:
+            case '400':
+                messages.error(request, f'Sending the data to RQC failed. The message sent to RQC was malformed. Details: {response["message"]}')
+            case '403':
+                messages.error(request, f'Sending the data to RQC failed. The API key was wrong. Details: {response["message"]}' ) #TODO alert editors? see api description
+            case '404':
+                messages.error(request, f'Sending the data to RQC failed. The whole URL was malformed or no journal with the given journal id exists at RQC. Details: {response["message"]}')
+            case  _: #TODO what other cases can occur? - change message based on response code
+                messages.error(request, f'Sending the data to RQC failed. There might be a server error on the side of RQC the data will be automatically resent shortly. Details: {response["message"]}')
+                RQCDelayedCall().objects.create(tries = 0,
+                                                article = article,
+                                                article_id = article.pk,
+                                                journal = journal,
+                                                failure_reason = response['http_status_code'],
+                                                retry_time = now() + timedelta(hours=23))
+    else:
+        if response['http_status_code'] == 303:
+            return redirect(response['redirect_target']) #TODO correct format?
+        else:
+            return redirect(referer)
 
 
 def rqc_grading_articles(request):
