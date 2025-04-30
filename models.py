@@ -40,3 +40,6 @@ class RQCDelayedCall(models.Model):
             return False
         return True
 
+    def delete_self(self):
+        self.delete()
+
