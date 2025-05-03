@@ -80,15 +80,15 @@ def submit_article_for_grading(request, article_id):
     # TODO what if no message?
     if not response['success']:
         match response['http_status_code']:
-            case '400':
+            case 400:
                 messages.error(request, f'Sending the data to RQC failed. The message sent to RQC was malformed. Details: {response["message"]}')
-            case '403':
+            case 403:
                 messages.error(request, f'Sending the data to RQC failed. The API key was wrong. Details: {response["message"]}' ) #TODO alert editors? see api description
-            case '404':
+            case 404:
                 messages.error(request, f'Sending the data to RQC failed. The whole URL was malformed or no journal with the given journal id exists at RQC. Details: {response["message"]}')
             case  _: #TODO what other cases can occur? - change message based on response code
                 messages.error(request, f'Sending the data to RQC failed. There might be a server error on the side of RQC the data will be automatically resent shortly. Details: {response["message"]}')
-                RQCDelayedCall().objects.create(tries = 0,
+                RQCDelayedCall.objects.create(tries = 0,
                                                 article = article,
                                                 article_id = article.pk,
                                                 journal = journal,
