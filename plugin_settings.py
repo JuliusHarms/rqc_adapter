@@ -42,15 +42,7 @@ class Rqc_adapterPlugin(plugins.Plugin):
     handshake_url = HANDSHAKE_URL
     article_pk_in_handshake_url = ARTICLE_PK_IN_HANDSHAKE_URL
 
-# TODO log salt value incase of accidental deletion - or privacy
-# wer hat zugriff auf die log daten
-# logging best practices
-# TODO logging in general
-# TODO if a submission is in the queue and a new call is made update the submission in
-# the queue and then refresh the 10 tries
-# TODO editable by none for the salt setting ?
-# TODO look at janway 1.8 what new features will be added
-# TODO show something in the RQC Box if no role relative action is avaiable
+
 def install():
     Rqc_adapterPlugin.install()
     update_settings(
