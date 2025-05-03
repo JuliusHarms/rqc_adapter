@@ -49,7 +49,7 @@ def implicit_call_mhs_submission(**kwargs) -> dict:
     article = kwargs['article']
     article_id = article.pk
     request = kwargs['request']
-    return fetch_post_data(request=request, article=article, article_id = article_id, journal= request.journal)
+    return fetch_post_data(user=request.user, article=article, article_id = article_id, journal= request.journal)
 
 def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict:
     result = {
@@ -64,7 +64,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         try:
             current_version = Version.objects.all().order_by('-number').first()
             if not current_version:
-                raise ValueError("No version information available")
+                raise ValueError('No version information available')
         except Exception as db_error:
             raise ValueError(f"Error retrieving version information: {db_error}")
 
@@ -88,31 +88,31 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
                 headers=headers,
                 timeout=REQUEST_TIMEOUT
             )
-        result["http_status_code"] = response.status_code
-        result["success"] = response.ok
+        result['http_status_code'] = response.status_code
+        result['success'] = response.ok
         try:
             response_data = response.json()
             try:
-                if "user_message" in response_data:
-                    result["message"] = response_data["user_message"]
+                if 'user_message' in response_data:
+                    result['message'] = response_data['user_message']
                 elif "error" in response_data:
-                    result["message"] = response_data["error"]
+                    result['message'] = response_data['error']
                 # Return info if json exists but no message - is this needed?
                 elif not response.ok:
-                    result["message"] = f"Request failed: {response.reason}"
-                if result["http_status_code"] == 303:
+                    result['message'] = f'Request failed: {response.reason}'
+                if result['http_status_code'] == 303:
                     result['redirect_target'] = response_data.get('redirect_target')
-                    result["success"] = True
+                    result['success'] = True
                     # TODO additional excepts
             except ValueError:
                 result[
-                    "message"] = f"Request failed and no error message was provided. Request status: {response.reason}"
+                    "message"] = f'Request failed and no error message was provided. Request status: {response.reason}'
         except json.decoder.JSONDecodeError:
-            result["message"] = f"Request succeeded but response body was malformed. Request status: {response.reason}"
+            result["message"] = f'Request succeeded but response body was malformed. Request status: {response.reason}'
         return result
 
     except RequestException as e:
-        result["message"] = f"Connection Error: {str(e)}"
+        result["message"] = f'Connection Error: {str(e)}'
         return result
 
 # TODO just article ? article already has id and journal...
@@ -158,7 +158,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
         'firstname': author.first_name if author.first_name else "",
         'lastname': author.last_name, #TODO what if this is empty? then a problem
         'orcid_id': author.orcid if author.orcid else "",
-        'order_number': author_order.get(author=author).order  # TODO what if article,author is not unique
+        'order_number': author_order.get(author=author).order+1  # TODO what if article,author is not unique
     }
     author_set.append(author_info)
     submission_data['author_set'] = author_set
@@ -181,7 +181,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
             'orcid_id': editor.orcid if editor.orcid else "",
             'level': 1  # TODO what about different levels
         }
-        submission_data['editor_set'].append(editor_data)
+        submission_data['editorassignment_set'].append(editor_data)
 
     # reviewerset
     # TODO handle opted out reviewers
@@ -203,7 +203,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
             'submitted': review_assignment.date_complete.strftime('%Y-%m-%dT%H:%M:%SZ'),  # TODO correct timing utc?
             'text': review_text,
             'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
-            'is_html': 'true',  # review_file.mime_type in ["text/html"]  # TODO is the mime type correct?
+            'is_html': True,  # review_file.mime_type in ["text/html"]  #TODO check can a review not be html
         }
         try:
             opting_status = review_assignment.reviewer.rqcrevieweroptingdecision.opting_status
@@ -246,5 +246,6 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
     # decision
     submission_data['decision'] = get_editorial_decision(
         article)  # TODO redo revision request by querying for revisionrequest objects
-    print(submission_data)  # TODO remove
+    submission_data = json.dumps(submission_data)
+    print(submission_data)
     return submission_data
