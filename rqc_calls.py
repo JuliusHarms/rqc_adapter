@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 import requests
@@ -52,9 +53,10 @@ def implicit_call_mhs_submission(**kwargs) -> dict:
 
 def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict:
     result = {
-        "success": False,
-        "http_status_code": None,
-        "message": None,
+        'success': False,
+        'http_status_code': None,
+        'message': None,
+        'redirect_target': None,
     }
 
     try:
@@ -90,38 +92,46 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         result["success"] = response.ok
         try:
             response_data = response.json()
-            if "user_message" in response_data:
-                result["message"] = response_data["user_message"]
-            elif "error" in response_data:
-                result["message"] = response_data["error"]
-            # Return info if json exists but no message - is this needed?
-            elif not response.ok:
-                result["message"] = f"Request failed: {response.reason}"
-        except ValueError:
-            result["message"] = f"Request failed and no error message was provided. Request status: {response.reason}"
+            try:
+                if "user_message" in response_data:
+                    result["message"] = response_data["user_message"]
+                elif "error" in response_data:
+                    result["message"] = response_data["error"]
+                # Return info if json exists but no message - is this needed?
+                elif not response.ok:
+                    result["message"] = f"Request failed: {response.reason}"
+                if result["http_status_code"] == 303:
+                    result['redirect_target'] = response_data.get('redirect_target')
+                    result["success"] = True
+                    # TODO additional excepts
+            except ValueError:
+                result[
+                    "message"] = f"Request failed and no error message was provided. Request status: {response.reason}"
+        except json.decoder.JSONDecodeError:
+            result["message"] = f"Request succeeded but response body was malformed. Request status: {response.reason}"
         return result
 
     except RequestException as e:
         result["message"] = f"Connection Error: {str(e)}"
         return result
 
-
-def fetch_post_data(request, article, article_id, journal):
+# TODO just article ? article already has id and journal...
+def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = ''):
     submission_data = {}
 
     # interactive user get from request
     # how to check if there is a user
-    if hasattr(request.user, 'id') and request.user.id is not None:
-        submission_data['interactive_user'] = request.user.email
+    if hasattr(user, 'id') and user.id is not None:
+        submission_data['interactive_user'] = user.email
     else:
         submission_data['interactive_user'] = ""
 
     # submission page - redirect to the page from where the post request came from
     # if interactive user is empty this should be emtpy as well
     if submission_data.get('interactive_user') is not None:
-        submission_data['mhs_submissionpage'] = request.META.get('HTTP_REFERER')  # open redirect vulnerabilities?
+        submission_data['mhs_submissionpage'] = mhs_submissionpage  #todo open redirect vulnerabilities?
     else:
-        submission_data['mhs_submissionpage'] = ""
+        submission_data['mhs_submissionpage'] = ''
 
     # title - length?
     submission_data['title'] = article.title
