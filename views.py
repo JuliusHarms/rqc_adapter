@@ -94,6 +94,7 @@ def submit_article_for_grading(request, article_id):
                                                 journal = journal,
                                                 failure_reason = response['http_status_code'],
                                                 retry_time = now() + timedelta(hours=23))
+        return redirect(referer)
     else:
         if response['http_status_code'] == 303:
             return redirect(response['redirect_target']) #TODO correct format?
