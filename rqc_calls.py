@@ -170,7 +170,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
     # last name
     # ordcid
     # level
-    submission_data['editor_set'] = []
+    submission_data['editorassignment_set'] = []
     editor_assignments = article.editorassignment_set.all()
     for editor_assignment in editor_assignments:
         editor = editor_assignment.editor
