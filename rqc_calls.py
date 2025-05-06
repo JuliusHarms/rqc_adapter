@@ -39,6 +39,7 @@ def call_mhs_submission(journal_id: str, api_key: str, submission_id, post_data:
     TODO
     """
     url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
+    print(url)
     return call_rqc_api(url , api_key, use_post=True, post_data=post_data)
 
 def implicit_call_mhs_submission(**kwargs) -> dict:
@@ -83,7 +84,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         }
         if use_post:
             #TODO If the adapter is open source, please include the URL of the public repository where the code can be found. The information is used by human beings on the RQC side for support and debugging.
-            headers['Content_Type'] = 'application/json'
+            headers['Content-Type'] = 'application/json'
             print(headers, post_data)
             response = requests.post(
                 url,
