@@ -49,7 +49,13 @@ def implicit_call_mhs_submission(**kwargs) -> dict:
     article = kwargs['article']
     article_id = article.pk
     request = kwargs['request']
-    return fetch_post_data(user=request.user, article=article, article_id = article_id, journal= request.journal)
+    journal = article.journal
+    journal_id = get_journal_id(journal)
+    api_key = get_journal_api_key(journal)
+    submission_id = article.pk #TODO change sub id to something else?
+    url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
+    post_data = fetch_post_data(user=request.user, article=article, article_id = article_id, journal= request.journal)
+    return call_rqc_api(url, api_key, use_post=True, post_data=post_data)
 
 def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict:
     result = {
@@ -78,15 +84,15 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         if use_post:
             response = requests.post(
                 url,
-                json=post_data,
-                headers=headers,
-                timeout=REQUEST_TIMEOUT
+                json = post_data,
+                headers = headers,
+                timeout = REQUEST_TIMEOUT
             )
         else:
             response = requests.get(
                 url,
-                headers=headers,
-                timeout=REQUEST_TIMEOUT
+                headers = headers,
+                timeout = REQUEST_TIMEOUT
             )
         result['http_status_code'] = response.status_code
         result['success'] = response.ok
