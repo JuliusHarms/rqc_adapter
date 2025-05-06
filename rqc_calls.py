@@ -82,11 +82,14 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
             'Authorization': f'Bearer {api_key}',
         }
         if use_post:
+            #TODO If the adapter is open source, please include the URL of the public repository where the code can be found. The information is used by human beings on the RQC side for support and debugging.
+            headers['Content_Type'] = 'application/json'
+            print(headers, post_data)
             response = requests.post(
                 url,
                 json = post_data,
                 headers = headers,
-                timeout = REQUEST_TIMEOUT
+                timeout = REQUEST_TIMEOUT,
             )
         else:
             response = requests.get(
@@ -253,5 +256,4 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
     submission_data['decision'] = get_editorial_decision(
         article)  # TODO redo revision request by querying for revisionrequest objects
     submission_data = json.dumps(submission_data)
-    print(submission_data)
     return submission_data
