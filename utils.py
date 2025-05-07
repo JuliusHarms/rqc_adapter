@@ -47,9 +47,9 @@ def get_editorial_decision(article):
     :return string of the editorial decision
     """
     if article.is_accepted:
-        return 'ACCEPTED'
+        return 'ACCEPT'
     elif article.date_declined is not None: #TODO correct?
-        return 'REJECTED'
+        return 'REJECT'
     else:
         try:
             revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first() #TODO get the most recent one?
