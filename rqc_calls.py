@@ -86,7 +86,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         }
         if use_post:
             #TODO If the adapter is open source, please include the URL of the public repository where the code can be found. The information is used by human beings on the RQC side for support and debugging.
-            headers['Content-Type'] = 'application/json'
+            #headers['Content-Type'] = 'application/json'
             print(headers, post_data)
             response = requests.post(
                 url,
@@ -214,8 +214,8 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
             'agreed': review_assignment.date_accepted.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'expected': review_assignment.date_due.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'submitted': review_assignment.date_complete.strftime('%Y-%m-%dT%H:%M:%SZ'),  # TODO correct timing utc?
-            'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
             'is_html': True,  # review_file.mime_type in ["text/html"]  #TODO check can a review not be html
+            'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
         }
         try:
             opting_status = review_assignment.reviewer.rqcrevieweroptingdecision.opting_status
@@ -260,5 +260,5 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
     # decision
     submission_data['decision'] = get_editorial_decision(
         article)  # TODO redo revision request by querying for revisionrequest objects
-    submission_data = json.dumps(submission_data)
+    #submission_data = json.dumps(submission_data)
     return submission_data
