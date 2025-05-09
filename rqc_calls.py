@@ -6,6 +6,7 @@ from requests import RequestException
 
 from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
 from plugins.rqc_adapter.config import VERSION
+from plugins.rqc_adapter.debug import data #todo remove
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision
 from plugins.rqc_adapter.plugin_settings import get_journal_api_key, get_journal_id, get_salt, set_journal_salt, \
     has_salt
@@ -41,6 +42,7 @@ def call_mhs_submission(journal_id: str, api_key: str, submission_id, post_data:
     url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
     print(url)
     return call_rqc_api(url , api_key, use_post=True, post_data=post_data)
+    #return call_rqc_api(url , api_key, use_post=True, post_data=data)
 
 def implicit_call_mhs_submission(**kwargs) -> dict:
     """
@@ -149,7 +151,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
     # external uid
     submission_data['external_uid'] = str(article_id)
     # visible uid - remove characters that cant appear in url
-    submission_data['visible_uid'] = str(article_id)
+    submission_data['visible_uid'] = str(article_id) #TODO only printable characters - no blanks?
 
     # submission date check date time - utc
     submission_data['submitted'] = article.date_submitted.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -180,7 +182,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
     # last name
     # ordcid
     # level
-    submission_data['editorassignment_set'] = []
+    submission_data['edassgmt_set'] = [] #TODO editor_set? editorassignment_set? edassgmt_set?
     editor_assignments = article.editorassignment_set.all()
     for editor_assignment in editor_assignments:
         editor = editor_assignment.editor
@@ -191,10 +193,11 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
             'orcid_id': editor.orcid if editor.orcid else "",
             'level': 1  # TODO what about different levels
         }
-        submission_data['editorassignment_set'].append(editor_data)
+        submission_data['edassgmt_set'].append(editor_data)
 
     # reviewerset
     # TODO handle opted out reviewers
+    #TODO change order
     submission_data['review_set'] = []
     review_assignments = article.reviewassignment_set.all()  # TODO what if there is not reviewassignment -> no call should be possible os that guarenteed?
     num_reviews = 0
@@ -211,7 +214,6 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
             'agreed': review_assignment.date_accepted.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'expected': review_assignment.date_due.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'submitted': review_assignment.date_complete.strftime('%Y-%m-%dT%H:%M:%SZ'),  # TODO correct timing utc?
-            'text': review_text,
             'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
             'is_html': True,  # review_file.mime_type in ["text/html"]  #TODO check can a review not be html
         }
@@ -226,6 +228,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
                 'lastname': reviewer.last_name,
                 'orcid_id': reviewer.orcid if reviewer.orcid else "",
             }
+            review_data['text'] = review_text
         else:
             if not has_salt(journal):
                 salt = set_journal_salt(journal)
@@ -237,6 +240,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '')
                 'lastname': '',
                 'orcid_id': ''
             }
+            review_data['text'] = ''
         review_data['reviewer'] = reviewer
         # handle attachments - there can only be one review file
         # need to be handled in their own function i think..
