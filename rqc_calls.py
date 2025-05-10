@@ -105,7 +105,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         result['http_status_code'] = response.status_code
         result['success'] = response.ok
 
-        if response.status_code == 200:
+        if response.status_code == 200 && use_post:
             return result
         # Otherwise try to parse the body
         else:
