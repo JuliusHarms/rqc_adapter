@@ -87,12 +87,14 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         if use_post:
             #TODO If the adapter is open source, please include the URL of the public repository where the code can be found. The information is used by human beings on the RQC side for support and debugging.
             #headers['Content-Type'] = 'application/json'
+            # todo make redirects work?
             print(headers, post_data)
             response = requests.post(
                 url,
                 json = post_data,
                 headers = headers,
                 timeout = REQUEST_TIMEOUT,
+                allow_redirects = False,
             )
         else:
             response = requests.get(
@@ -102,27 +104,31 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
             )
         result['http_status_code'] = response.status_code
         result['success'] = response.ok
-        try:
-            response_data = response.json()
-            try:
-                if 'user_message' in response_data:
-                    result['message'] = response_data['user_message']
-                elif "error" in response_data:
-                    result['message'] = response_data['error']
-                # Return info if json exists but no message - is this needed?
-                elif not response.ok:
-                    result['message'] = f'Request failed: {response.reason}'
-                if result['http_status_code'] == 303:
-                    result['redirect_target'] = response_data.get('redirect_target')
-                    result['success'] = True
-                    # TODO additional excepts
-            except ValueError:
-                result[
-                    "message"] = f'Request failed and no error message was provided. Request status: {response.reason}'
-        except json.decoder.JSONDecodeError:
-            result["message"] = f'Request succeeded but response body was malformed. Request status: {response.reason}'
-        return result
 
+        if response.status_code == 200:
+            return result
+        # Otherwise try to parse the body
+        else:
+            try:
+                response_data = response.json()
+                try:
+                    if 'user_message' in response_data:
+                        result['message'] = response_data['user_message']
+                    elif "error" in response_data:
+                        result['message'] = response_data['error']
+                    # Return info if json exists but no message - is this needed?
+                    elif not response.ok:
+                        result['message'] = f'Request failed: {response.reason}'
+                    if result['http_status_code'] == 303:
+                        result['redirect_target'] = response_data.get('redirect_target')
+                        result['success'] = True
+                        # TODO additional excepts
+                except ValueError:
+                    result[
+                        "message"] = f'Request failed and no error message was provided. Request status: {response.reason}'
+            except json.decoder.JSONDecodeError:
+                result["message"] = f'Request succeeded but response body was malformed. Request status: {response.reason}'
+            return result
     except RequestException as e:
         result["message"] = f'Connection Error: {str(e)}'
         return result
