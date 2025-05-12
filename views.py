@@ -88,12 +88,12 @@ def submit_article_for_grading(request, article_id):
                 messages.error(request, f'Sending the data to RQC failed. The whole URL was malformed or no journal with the given journal id exists at RQC. Details: {response["message"]}')
             case  _: #TODO what other cases can occur? - change message based on response code
                 messages.error(request, f'Sending the data to RQC failed. There might be a server error on the side of RQC the data will be automatically resent shortly. Details: {response["message"]}')
-                RQCDelayedCall.objects.create(tries = 0,
+                RQCDelayedCall.objects.create(remaining_tries= 10,
                                                 article = article,
                                                 article_id = article.pk,
                                                 journal = journal,
                                                 failure_reason = response['http_status_code'],
-                                                retry_time = now() + timedelta(hours=23))
+                                                last_attempt_at = now())
         return redirect(referer)
     else:
         if response['http_status_code'] == 303:
