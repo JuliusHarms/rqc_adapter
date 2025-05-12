@@ -1,4 +1,7 @@
 import os
+from datetime import timedelta
+from time import sleep
+
 from django.utils.timezone import now
 from django.core.management.base import BaseCommand
 
@@ -32,30 +35,33 @@ class Command(BaseCommand):
         :param options: None
         :return: None
         """
-        queue = RQCDelayedCall.objects.filter(retry_time__gte=now()).order_by('-retry_time')
+        queue = RQCDelayedCall.objects.filter(last_attempt_at__gte=now()+timedelta(hours=24)).order_by('-last_attempt_at')
         for call in queue:
             if call.is_valid:
                 user = call.user
                 article = call.article
                 article_id = call.article.pk
                 journal = call.article.journal
-                post_data = fetch_post_data(user ,article, article_id, journal, interactive= False)
+                post_data = fetch_post_data(user ,article, article_id, journal)
                 response = call_mhs_submission(get_journal_id(journal), get_journal_api_key(journal), article_id, post_data)
-                call.tries = call.tries + 1
+                call.remaining_tries = call.remaining_tries + 1
                 #TODO handle response
                 if not response['success']:
+                    call.last_attempt_at = now()
                     match response['http_status_code']:
                         case '400':
-                            call.delete()
+                            print(f"error: {response['http_status_code']} {response['message']}")  # TODO temp  #TODO temp
                         case '403':
                             print(f"error: {response['http_status_code']} {response['message']}") #TODO temp  #TODO temp
                         case '404':
                             print(f"error: {response['http_status_code']} {response['message']}") #TODO temp
                         case _:  # TODO what other cases can occur? - change message based on response code
                             print(f"error: {response['http_status_code']} {response['message']}")
+                    # If a call is unsuccessful we should stop trying for the day.
+                    return
                 else:
                     call.delete()
             else:
                 call.delete()
-            sleep(1) #TODO sleep between calls?
+            sleep(1) #TODO sleep between calls? or use asyncio
 

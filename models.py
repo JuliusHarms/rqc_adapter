@@ -30,14 +30,14 @@ class RQCReviewerOptingDecision(models.Model):
 
 
 class RQCDelayedCall(models.Model):
-    tries = models.IntegerField(default=0)
+    remaining_tries = models.IntegerField(default=0)
     article = models.ForeignKey(Article, on_delete=models.CASCADE)  # TODO cascade? probably yes but if reviews are holy maybe i should save the call data and then submit to rqc anyway
     user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
-    retry_time = models.DateTimeField()
+    last_attempt_at = models.DateTimeField()
     failure_reason = models.TextField()
     @property
     def is_valid(self):
-        if self.tries >= 10:
+        if self.remaining_tries <= 0:
             return False
         return True
 
