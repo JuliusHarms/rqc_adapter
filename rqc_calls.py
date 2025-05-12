@@ -6,7 +6,6 @@ from requests import RequestException
 
 from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
 from plugins.rqc_adapter.config import VERSION
-from plugins.rqc_adapter.debug import data #todo remove
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision
 from plugins.rqc_adapter.plugin_settings import get_journal_api_key, get_journal_id, get_salt, set_journal_salt, \
     has_salt
@@ -105,7 +104,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         result['http_status_code'] = response.status_code
         result['success'] = response.ok
 
-        if response.status_code == 200 && use_post:
+        if response.status_code == 200 & use_post:
             return result
         # Otherwise try to parse the body
         else:
@@ -134,12 +133,12 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         return result
 
 # TODO just article ? article already has id and journal...
-def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = ''):
+def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '', interactive = False):
     submission_data = {}
 
     # interactive user get from request
     # how to check if there is a user
-    if hasattr(user, 'id') and user.id is not None:
+    if interactive and hasattr(user, 'id') and user.id is not None:
         submission_data['interactive_user'] = user.email
     else:
         submission_data['interactive_user'] = ""
