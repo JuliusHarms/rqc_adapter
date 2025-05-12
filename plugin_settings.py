@@ -71,21 +71,21 @@ def hook_registry():
 # TODO difference between
 def register_for_events():
     from plugins.rqc_adapter.rqc_calls import implicit_call_mhs_submission
-    events_logic.Events.register_for_event(
-        Events.ON_REVIEW_COMPLETE,
-        implicit_call_mhs_submission,
-    )
+   #  events_logic.Events.register_for_event(
+   #       Events.ON_REVIEW_COMPLETE,
+   #        implicit_call_mhs_submission,
+   #    )
 
-    events_logic.Events.register_for_event(
-        Events.ON_REVIEW_CLOSED,
-        implicit_call_mhs_submission,
-    )
+   #     events_logic.Events.register_for_event(
+   #         Events.ON_REVIEW_CLOSED,
+   #         implicit_call_mhs_submission,
+   #     )
 
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_ACCEPTED,
         implicit_call_mhs_submission,
     )
-
+    # todo -> set editorial decision to ""?
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_DECLINED,
         implicit_call_mhs_submission,
