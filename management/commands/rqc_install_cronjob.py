@@ -47,7 +47,7 @@ class Command(BaseCommand):
             command = '%s' % django_command
         cron_job = tab.new(command)
         #todo shift cron time? or let users set the cron job time?
-        cron_job.day.every(1)
+        cron_job.setall('0 8 * * *')
         tab.write()
         self.stdout.write(
             self.style.SUCCESS('Successfully installed RQC cronjob.')
