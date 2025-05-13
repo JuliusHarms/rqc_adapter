@@ -27,15 +27,20 @@ class Command(BaseCommand):
         :return: None
         """
         if not os.path.isfile('/usr/bin/crontab'):
+            self.stdout.write(
+                self.style.WARNING('WARNING: /usr/bin/crontab not found. Could not install RQC cronjob.')
+            )
             return
 
         if not crontab:
-            print("WARNING: crontab module is not installed, skipping crontab config.")
+            self.stdout.write(
+                self.style.WARNING('WARNING: crontab python module is not installed. Could not install RQC cronjob.')
+            )
             return
 
         tab = crontab.CronTab(user=True) #load current user as cron user
         virtualenv = os.environ.get('VIRTUAL_ENV', None)
-        django_command = "{0}/manage.py {1}".format(settings.BASE_DIR, 'make_delayed_rqc_calls')
+        django_command = "{0}/manage.py {1}".format(settings.BASE_DIR, 'rqc_make_delayed_calls')
         if virtualenv:
             command = '%s/bin/python3 %s' % (virtualenv, django_command)
         else:
@@ -44,3 +49,7 @@ class Command(BaseCommand):
         #todo shift cron time? or let users set the cron job time?
         cron_job.day.every(1)
         tab.write()
+        self.stdout.write(
+            self.style.SUCCESS('Successfully installed RQC cronjob.')
+        )
+        self.stdout.flush()
