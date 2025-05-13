@@ -21,7 +21,6 @@ class Command(BaseCommand):
     """
     Retries failed RQC Calls.
     """
-
     help = "Retries failed RQC Calls."
 
     def add_arguments(self, parser):
@@ -51,10 +50,14 @@ class Command(BaseCommand):
                     match response['http_status_code']:
                         case '400':
                             print(f"error: {response['http_status_code']} {response['message']}")  # TODO temp  #TODO temp
+                            # implementation error?
                         case '403':
-                            print(f"error: {response['http_status_code']} {response['message']}") #TODO temp  #TODO temp
+                            print(f"error: {response['http_status_code']} {response['message']}")
+                            # TODO temp  #TODO temp
+                            # the API key is wrong. If the MHS had previously validated the API key, this presumably means that the API key has changed at the RQC side. In that case, the journal editors should be alerted because no subsequent API call is going to be successful. The response body will contain a field error meant to be displayed to the user.
                         case '404':
                             print(f"error: {response['http_status_code']} {response['message']}") #TODO temp
+                            # whole URL was malformed or no journal with the given rqc_journal_id exists at RQC.
                         case _:  # TODO what other cases can occur? - change message based on response code
                             print(f"error: {response['http_status_code']} {response['message']}")
                     # If a call is unsuccessful we should stop trying for the day.

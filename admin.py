@@ -6,7 +6,7 @@ class RQCReviewerOptingDecisionAdmin(admin.ModelAdmin):
     list_display = ('reviewer','opting_status','opting_date')
 
 class RQCDelayedCallAdmin(admin.ModelAdmin):
-    list_display = ('article', 'user', 'tries', 'retry_time', 'failure_reason')
+    list_display = ('article', 'user', 'remaining_tries', 'last_attempt_at', 'failure_reason')
 
 admin.site.register(RQCReviewerOptingDecision, RQCReviewerOptingDecisionAdmin)
 admin.site.register(RQCDelayedCall, RQCDelayedCallAdmin)

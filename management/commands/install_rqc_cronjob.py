@@ -41,5 +41,6 @@ class Command(BaseCommand):
         else:
             command = '%s' % django_command
         cron_job = tab.new(command)
-        cron_job.hour.every(6)
+        #todo shift cron time? or let users set the cron job time?
+        cron_job.day.every(1)
         tab.write()
