@@ -1,30 +1,23 @@
 import json
 from datetime import datetime, timezone
-
 import requests
 from requests import RequestException
+
+from utils.models import Version
 
 from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
 from plugins.rqc_adapter.config import VERSION
 from plugins.rqc_adapter.plugin_settings import get_journal_api_key, get_journal_id
 from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
-from utils.models import Version
+
 
 
 def call_mhs_apikeycheck(journal_id: str, api_key: str) -> dict:
     """
     Verify API key with the RQC service.
-
-    Args:
-        journal_id: The ID of the journal to check
-        api_key: The API key to validate
-
-    Returns:
-        int: HTTP status code on simple success
-        dict: Response data if available and valid
-
-    Raises:
-        RequestException: If the request fails
+    :param journal_id: str: The ID of the journal to check
+    :param api_key: str: The API key to validate
+    :return:int: dict: Response data if available and valid or raises RequestException: If the request fails
     TODO:
         Display error to the user. Improve error handling...
     """

@@ -7,16 +7,18 @@ from plugins.rqc_adapter.utils import convert_review_decision_to_rqc_format, cre
 # TODO just article ? article already has id and journal...
 def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '', interactive = False):
     """ Generates and collects all information for a RQC submission
-    :param user: User Object
-    :param article: Article Object
+    :param user: User object
+    :param article: Article object
     :param article_id: Article ID
-    :param journal: Journal Object
+    :param journal: Journal object
     :param mhs_submissionpage: str Redirect URL from RQC back to Janeway
     :param interactive: Boolean flag to enable interactive call mode which redirects to RQC
+    :return: Dictionary of submission data
     """
     submission_data = {}
 
-    # If interactive flag is sent user information is transmitted to RQC
+    # If interactive flag is set user information is transmitted to RQC
+
     if interactive and hasattr(user, 'id') and user.id is not None:
         submission_data['interactive_user'] = user.email
     else:
@@ -24,7 +26,8 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '',
 
     # If interactive user is set the call will open RQC to grade the submission
     # mhs_submissionpage is used by RQC to redirect the user to Janeway afterwards
-    # If interactive user is empty this should be empty as well
+    # So if interactive user is empty this should be empty as well
+
     if submission_data.get('interactive_user') != '':
         submission_data['mhs_submissionpage'] = mhs_submissionpage  #todo open redirect vulnerabilities?
     else:
@@ -57,7 +60,7 @@ def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '',
 
 def get_authors_info(article):
     """ Returns the authors info for an article
-    :param article: Article Object
+    :param article: Article object
     :return: Dictionary of author information
     """
     author = article.correspondence_author
@@ -94,9 +97,9 @@ def get_editors_info(article):
 
 def get_reviews_info(article, article_id, journal):
     """ Returns the info for all reviews for the given article in a list
-    :param article: Article Object
+    :param article: Article object
     :param article_id: article id
-    :param journal: Journal Object
+    :param journal: Journal object
     :return: list of review info
     """
     review_set = []
@@ -162,6 +165,7 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
             'lastname': reviewer.last_name,
             'orcid_id': reviewer.orcid if reviewer.orcid else '',
         }
+    # If a reviewer has opted out RQC requires that the email address is anonymised and no additional data is transmitted
     else:
         if not has_salt(journal):
             salt = set_journal_salt(journal)
@@ -176,7 +180,7 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
     return reviewer_data
 
 def get_attachments_info(article_id, review_file):
-    """ Gets the filename of the attachment and encodes its data
+    """ Gets the filename of the attachment and encodes its data. Attachments don't work yet on the side of RQC so in practice this should only be called with review_file=None
     :param review_file
     :param article_id
     :return: list of dicts {filename: str, data: str}
