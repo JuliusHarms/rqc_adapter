@@ -1,11 +1,12 @@
-from events.logic import Events
-from plugins.rqc_adapter.utils import generate_random_salt
 from utils import plugins
 from utils.install import update_settings
 from journal.models import Journal
 from core.models import Setting, SettingValue
 from events import logic as events_logic
+from events.logic import Events
+
 from plugins.rqc_adapter.config import VERSION
+from plugins.rqc_adapter.utils import generate_random_salt
 
 PLUGIN_NAME = 'RQC Adapter Plugin'
 DISPLAY_NAME = 'RQC Adapter'
