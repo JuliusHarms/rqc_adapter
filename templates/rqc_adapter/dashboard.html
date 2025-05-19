@@ -14,8 +14,12 @@
                 </p>
             {% endif %}
             {%  if reviewer %}
-                <p>For Reviewers:</p>
+                <p>For reviewers:</p>
                 <a class="button" href="{% url 'rqc_adapter_reviewer_opting_form' %}">Participate in Review Quality Collector</a>
+            {% endif %}
+            {% if editor %}
+                <p>For editors:</p>
+                <a class="button" href="{% url 'rqc_adapter_rqc_grading_articles' %}">Grade article reviews</a>
             {% endif %}
             <div class="button-group stacked">
             </div>
