@@ -110,12 +110,23 @@ def rqc_grading_articles(request):
     """
     article_filter = request.GET.get('filter', None)
     articles_in_rqc_grading = submission_models.Article.objects.filter(
-        journal=request.journal,
-        stage=plugin_settings.STAGE,
+        journal = request.journal,
+        stage = plugin_settings.STAGE,
     )
+
+    # Articles with at least one submitted review should also be listed.
+    # In case an RQCGuardian wants to grade some of the reviews before making an editorial decision
+
+    reviewed_articles = submission_models.Article.objects.filter(
+        journal = request.journal,
+        stage = submission_models.STAGE_UNDER_REVIEW,
+        reviewassignment__is_complete = True
+    )
+
     template = 'rqc_adapter/rqc_grading_articles.html'
     context = {
         'articles_in_rqc_grading': articles_in_rqc_grading,
+        'reviewed_articles': reviewed_articles,
         'filter': article_filter,
     }
     return render(request, template, context)
