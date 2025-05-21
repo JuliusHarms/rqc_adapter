@@ -1,11 +1,12 @@
-from events.logic import Events
-from plugins.rqc_adapter.utils import generate_random_salt
 from utils import plugins
 from utils.install import update_settings
 from journal.models import Journal
 from core.models import Setting, SettingValue
 from events import logic as events_logic
+from events.logic import Events
+
 from plugins.rqc_adapter.config import VERSION
+from plugins.rqc_adapter.utils import generate_random_salt
 
 PLUGIN_NAME = 'RQC Adapter Plugin'
 DISPLAY_NAME = 'RQC Adapter'
@@ -48,9 +49,7 @@ def install():
     update_settings(
         file_path='plugins/rqc_adapter/install/settings.json'
     )
-    # Generates a salt value for each journal
     # TODO check salt values for uniqueness
-    # TODO what if a new journal is created -> create a salt later when needed
     journals = Journal.objects.all()
     setting = Setting.objects.get(name='rqc_journal_salt')
     for journal in journals:
@@ -69,9 +68,7 @@ def hook_registry():
     }
 
 
-# TODO register for review_complete, article_declined, article accepted, revisions requested
 # TODO test out what happens if you request revisions on an article
-# TODO difference between
 def register_for_events():
     from plugins.rqc_adapter.rqc_calls import implicit_call_mhs_submission
 
@@ -100,8 +97,8 @@ def set_journal_salt(journal):
     """
     Sets the journals salt to a newly random generated salt string
     TODO: user could change the value through database admin interface -> add warning not to do that
-    param: journal: Journal object
-    return: salt string
+    :param journal: Journal object
+    :return: salt string
     """
     salt = generate_random_salt()
     setting = Setting.objects.filter(name='rqc_journal_salt')
@@ -111,25 +108,26 @@ def set_journal_salt(journal):
 
 def has_salt(journal):
     """
-    param: journal: Journal object
-    return: boolean
+    :param journal: Journal object
+    :return: boolean
     """
     return SettingValue.objects.filter(setting__name='rqc_journal_salt', journal=journal).exists()
 
 def get_salt(journal):
+    """ Gets the salt string for the journal
+    :param journal: Journal object
+    :return: salt string
+    """
     return SettingValue.objects.get(setting__name='rqc_journal_salt', journal=journal).value
 
 def set_journal_id(journal_id: int, journal: Journal) -> dict:
     """
     Set the journal id.
-
-    :param
-        journal_id: The journal ID to set
-        journal: Journal object
-    :returns
-        A dictionary with status and message
-    :raises
-        Setting.DoesNotExist: If the setting doesn't exist
+    :param journal_id: The journal ID to set
+    :param journal: Journal object
+    #TODO handle setting doesnt exists?
+    :return: A dictionary with status and message
+    :raises: Setting.DoesNotExist: If the setting doesn't exist
     """
     if not journal_id or not isinstance(journal_id, int):
         return {"status": "error", "message": "Invalid journal ID"}
@@ -145,11 +143,17 @@ def set_journal_id(journal_id: int, journal: Journal) -> dict:
         return {"status": "error", "message": f"Error updating journal Id: {str(e)}"}
 
 def has_journal_id(journal: Journal) -> bool:
+    """ Checks if the journal has a journal ID
+    :param journal: Journal object
+    :return: Boolean
+    """
     journal_id_setting = Setting.objects.get(name='rqc_journal_id')
     return SettingValue.objects.filter(setting=journal_id_setting, journal=journal).exists()
 
 def get_journal_id(journal: Journal) -> str:
-    """
+    """ Returns the journal ID
+    :param journal: Journal object
+    :return: journal ID
     TODO - errors
     """
     journal_id_setting = Setting.objects.get(name='rqc_journal_id')
@@ -158,13 +162,10 @@ def get_journal_id(journal: Journal) -> str:
 def set_journal_api_key(journal_api_key: str, journal: Journal) -> dict:
     """
     Set the journal API key.
-    :param
-        journal_api_key: The API key to set
-        journal: Journal object
-    :return
-        A dictionary with status and message
-    :raises
-        Setting.DoesNotExist: If the setting doesn't exist'
+    :param journal_api_key: The API key to set
+    :param journal: Journal object
+    :return: A dictionary with status and message
+    :raises: Setting.DoesNotExist: If the setting doesn't exist'
     """
     if not journal_api_key or not isinstance(journal_api_key, str):
         return {"status": "error", "message": "Invalid journal API key"}
@@ -180,12 +181,18 @@ def set_journal_api_key(journal_api_key: str, journal: Journal) -> dict:
 
 
 def get_journal_api_key(journal: Journal) -> str:
-    """
+    """ Retruns the journals API key
+    :param journal: Journal object
+    :return: str api key
     TODO errors
     """
     journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
     return SettingValue.objects.get(setting=journal_api_key_setting, journal=journal).value
 
 def has_journal_api_key(journal: Journal) -> bool:
+    """ Checks if the journal API key exists
+    :param journal: Journal object
+    :return: boolean
+    """
     journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
     return SettingValue.objects.filter(setting=journal_api_key_setting, journal=journal).exists()

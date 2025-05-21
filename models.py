@@ -1,7 +1,6 @@
 from datetime import timezone, datetime
 
 from django.db import models
-from pyasn1.type.univ import Choice
 
 from core.janeway_global_settings import AUTH_USER_MODEL
 from submission.models import Article
