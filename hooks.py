@@ -8,5 +8,6 @@ def render_reviewer_opting_form(context):
 
 def render_rqc_grading_task(context):
     request = context['request']
-    article = context['article']
-    return  render_to_string('rqc_adapter/grading_task.html', context={'article': article})
+    string = render_to_string('rqc_adapter/grading_task.html', context={})
+    print(string)
+    return string
