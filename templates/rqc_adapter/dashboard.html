@@ -1,6 +1,7 @@
 {% load roles %}
 {% load role_count %}
 {% user_has_role request 'editor' as editor %}
+{% user_has_role request 'section_editor' as section_editor %}
 {% user_has_role request 'reviewer' as reviewer %}
 
 <div class="large-4 columns end" data-equalizer-watch>
@@ -17,7 +18,7 @@
                 <p>For reviewers:</p>
                 <a class="button" href="{% url 'rqc_adapter_reviewer_opting_form' %}">Participate in Review Quality Collector</a>
             {% endif %}
-            {% if editor %}
+            {% if editor or section_editor %}
                 <p>For editors:</p>
                 <a class="button" href="{% url 'rqc_adapter_rqc_grading_articles' %}">Grade article reviews</a>
             {% endif %}
