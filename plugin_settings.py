@@ -62,7 +62,10 @@ def install():
 def hook_registry():
     Rqc_adapterPlugin.hook_registry()
     return {
-        'core_article_tasks': {'module: plugins.rqc_adapter.hooks', 'function: render_reviewer_opting_form'},
+        'journal_editor_nav_block': {
+                    'module': 'plugins.rqc_adapter.hooks',
+                    'function': 'render_rqc_grading_task',
+                    },
     }
 
 
@@ -71,15 +74,6 @@ def hook_registry():
 # TODO difference between
 def register_for_events():
     from plugins.rqc_adapter.rqc_calls import implicit_call_mhs_submission
-   #  events_logic.Events.register_for_event(
-   #       Events.ON_REVIEW_COMPLETE,
-   #        implicit_call_mhs_submission,
-   #    )
-
-   #     events_logic.Events.register_for_event(
-   #         Events.ON_REVIEW_CLOSED,
-   #         implicit_call_mhs_submission,
-   #     )
 
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_ACCEPTED,
