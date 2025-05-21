@@ -131,7 +131,7 @@ def get_reviews_info(article, article_id, journal):
         else:
             review_data['text'] = ''
 
-        review_data['reviewer'] = get_reviewer_info(article, reviewer_has_opted_in, journal)
+        review_data['reviewer'] = get_reviewer_info(reviewer, reviewer_has_opted_in, journal)
 
         review_data['attachment_set'] = get_attachments_info(article_id, review_file=None)
         review_set.append(review_data)
