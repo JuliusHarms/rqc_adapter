@@ -1,4 +1,5 @@
 from utils import plugins
+from utils.logger import get_logger
 from utils.install import update_settings
 from journal.models import Journal
 from core.models import Setting, SettingValue
@@ -26,6 +27,7 @@ KANBAN_CARD = ''
 DASHBOARD_TEMPLATE = 'rqc_adapter/dashboard.html'
 
 
+logger = get_logger(__name__)
 
 class Rqc_adapterPlugin(plugins.Plugin):
     plugin_name = PLUGIN_NAME
@@ -55,6 +57,7 @@ def install():
     for journal in journals:
         salt = generate_random_salt()
         setting_value = SettingValue(setting=setting, value=salt, journal=journal)
+        logger.info('Set rqc_journal salt to: %s for journal: %s', salt, journal.name) #From a security standpoint is this ok? Test later.
         setting_value.save()
 
 
