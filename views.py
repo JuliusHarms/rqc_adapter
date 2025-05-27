@@ -1,11 +1,9 @@
-from datetime import timedelta, timezone
-from http.client import HTTPResponse
 from django.utils.timezone import now
+from utils.logger import get_logger
 
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
-from journal.models import Journal
 from plugins.rqc_adapter.rqc_calls import call_mhs_submission, fetch_post_data
 from security import decorators
 from submission import models as submission_models
@@ -14,9 +12,9 @@ from core.models import SettingValue
 from plugins.rqc_adapter import forms, plugin_settings
 from plugins.rqc_adapter.plugin_settings import set_journal_id, set_journal_api_key, has_salt, set_journal_salt, \
     get_journal_id, get_journal_api_key, has_journal_id, has_journal_api_key, get_salt
-from plugins.rqc_adapter.utils import encode_file_as_b64, convert_review_decision_to_rqc_format, get_editorial_decision, create_pseudo_address
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall
 
+logger = get_logger(__name__)
 
 def manager(request):
     template = 'rqc_adapter/manager.html'
@@ -66,9 +64,9 @@ def submit_article_for_grading(request, article_id):
     article = get_object_or_404(
         submission_models.Article,
         pk=article_id,
-        journal=request.journal,  #TODO?
+        journal=request.journal,
     )
-    journal = article.journal #TODO ?
+    journal = article.journal
     user = request.user
     mhs_submissionpage = request.META.get('HTTP_REFERER')
     post_data = fetch_post_data(user, article, article_id, journal, mhs_submissionpage, interactive = True)
@@ -79,6 +77,7 @@ def submit_article_for_grading(request, article_id):
     #TODO add messages in templates
     # TODO what if no message?
     if not response['success']:
+        logger.debug(f'Sending the data to RQC failed. {response}') #logging ok?
         match response['http_status_code']:
             case 400:
                 messages.error(request, f'Sending the data to RQC failed. The message sent to RQC was malformed. Details: {response["message"]}')
