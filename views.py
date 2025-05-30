@@ -1,4 +1,6 @@
 from django.utils.timezone import now
+from rest_framework.status import HTTP_307_TEMPORARY_REDIRECT
+
 from utils.logger import get_logger
 
 from django.contrib import messages
@@ -146,13 +148,18 @@ def rqc_grade_article_reviews(request, article_id):
 # TODO add reviewer opting
 # TODO should a user be able to manually enter the url and change opting status?
 # TODO check user login?
+# TODO user should be able to get here manually
 def reviewer_opting_form(request):
     template = 'rqc_adapter/reviewer_opting_form.html'
     try:
-        initial_value = RQCReviewerOptingDecision.objects.get(reviewer=request.user).opting_status
+        opting_status = RQCReviewerOptingDecision.objects.get(reviewer=request.user)
+        if opting_status.is_valid:
+            messages.info(request,
+                          'You have already decided whether to participate or not participate in RQC for this journal and journal year.')
+            return redirect('core_dashboard')
     except RQCReviewerOptingDecision.DoesNotExist:
-        initial_value = RQCReviewerOptingDecision.OptingChoices.OPT_IN
-    form = forms.ReviewerOptingForm(initial={'status_selection_field': initial_value})
+        pass
+    form = forms.ReviewerOptingForm(initial={'status_selection_field': RQCReviewerOptingDecision.OptingChoices.OPT_IN})
     return render(request, template, {'form': form})
 #
 # TODO get user and opting submission info
@@ -166,7 +173,11 @@ def set_reviewer_opting_status(request):
         if form.is_valid():
             opting_status = form.cleaned_data['status_selection_field']
             user = request.user
-            current_status, created = RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, opting_status=opting_status)
-            return redirect('rqc_adapter_reviewer_opting_form')
+            RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, opting_status=opting_status)
+            if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
+                messages.info(request, 'Thank you for choosing to participate in RQC!')
+            else:
+                messages.info(request, 'Thank you for your response. Your preference has been recorded.')
+            return redirect('core_dashboard')
     else:
-        return redirect('rqc_adapter_reviewer_opting_form')
+        return redirect('core_dashboard')
