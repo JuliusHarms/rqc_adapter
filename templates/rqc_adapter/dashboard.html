@@ -1,26 +1,60 @@
 {% load roles %}
-{% load role_count %}
-{% user_has_role request 'editor' as editor %}
-{% user_has_role request 'section_editor' as section_editor %}
-{% user_has_role request 'reviewer' as reviewer %}
+{% load opting_status %}
+{% load articles_count %}
+{% user_has_role request 'editor' as is_editor %}
+{% user_has_role request 'section_editor' as is_section_editor %}
+{% user_has_role request 'reviewer' as is_reviewer %}
+{% has_submitted_opting_status as has_opting_status %}
+{% has_opted_in as has_opted_in %}
+{% articles_in_rqc_stage_count as articles_in_rqc_stage_count %}
+{% reviewed_articles_count as reviewed_articles_count %}
 
 <div class="large-4 columns end" data-equalizer-watch>
     <div class="box">
+
         <div class="title-area">
             <h2>Review Quality Collector Plugin</h2>
+            {# Only editors or section editors should be able to send reviews to RQC #}
+            {% if is_editor or is_section_editor %}
+                <a href="{% url 'rqc_adapter_rqc_grading_articles' %}" class="button">View Articles with reviews to grade</a>
+            {% endif %}
         </div>
+
         <div class="content">
-            {% if editor %}
-                <p>
-                </p>
-            {% endif %}
-            {%  if reviewer %}
+            <p>
+                <a href="https://reviewqualitycollector.org/">Review Quality Collector</a> (RQC) is an initiative for improving the quality of scientific peer review. Its core is a mechanism that supplies a reviewer with a receipt for their work.
+            </p>
+            {# Only reviewers should be able to opt in or opt out of RQC #}
+            {%  if is_reviewer %}
                 <p>For reviewers:</p>
-                <a class="button" href="{% url 'rqc_adapter_reviewer_opting_form' %}">Participate in Review Quality Collector</a>
+                {% if  has_opting_status %}
+                    {% if has_opted_in %}
+                        <p> You have opted into participating in the Review Quality Collector initiative for this journal and year. Thank you!</p>
+                    {% else %}
+                        <p> You have opted out of participating in the Review Quality Collector initiative for this journal and year.</p>
+                    {% endif %}
+                {% else %}
+                    <a class="button" href="{% url 'rqc_adapter_reviewer_opting_form' %}">Participate in Review Quality Collector</a>
+                {% endif %}
             {% endif %}
-            {% if editor or section_editor %}
-                <p>For editors:</p>
-                <a class="button" href="{% url 'rqc_adapter_rqc_grading_articles' %}">Grade article reviews</a>
+
+            {# This information is only relevant for editors and should only be seen by editors #}
+            {% if is_editor or is_section_editor %}
+                <p>
+                    For editors:
+                </p>
+
+                <div class="content">
+                        <div class="summary">
+                            <span class="stat alert">{{ reviewed_articles_count }}</span>
+                            <span class="title">Articles with reviews that can be graded</span>
+                        </div>
+                        <div class="summary">
+                            <span class="stat">{{ articles_in_rqc_stage_count }}</span>
+                            <span class="title">Articles in RQC Grading Stage</span>
+                        </div>
+                </div>
+
             {% endif %}
             <div class="button-group stacked">
             </div>
