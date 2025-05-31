@@ -59,6 +59,7 @@ def handle_journal_settings_update(request):
 # TODO what is a production user + add decorators to the other functions if needed
 # TODO remove request as an argument
 # TODO logic to move the article to the next stage?
+# TODO check if user is editor or section editor
 @decorators.has_journal
 @decorators.production_user_or_editor_required
 def submit_article_for_grading(request, article_id):
@@ -102,7 +103,7 @@ def submit_article_for_grading(request, article_id):
         else:
             return redirect(referer)
 
-
+# TODO check if user is editor or section editor
 def rqc_grading_articles(request):
     """
     Displays a list of articles in the RQC Grading stage.
