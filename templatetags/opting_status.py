@@ -15,3 +15,15 @@ def has_submitted_opting_status(context):
         return True
     else:
         return False
+
+@register.simple_tag(takes_context=True)
+def has_opted_in(context):
+    request = context['request']
+    try:
+        status = RQCReviewerOptingDecision.objects.get(reviewer=request.user)
+    except RQCReviewerOptingDecision.DoesNotExist:
+        return False
+    if status.is_valid and status.opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
+        return True
+    else:
+        return False
