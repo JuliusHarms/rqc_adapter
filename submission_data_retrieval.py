@@ -137,13 +137,14 @@ def get_reviews_info(article, article_id, journal):
         review_set.append(review_data)
     return review_set
 
-def has_opted_in(reviewer):
+def has_opted_in(reviewer, journal):
     """ Determines if reviewer has opted into RQC
     :param reviewer: Reviewer object
+    :param journal: Journal object
     :return: True if reviewer has opted in and False otherwise
     """
     try:
-        opting_status = reviewer.rqcrevieweroptingdecision.opting_status
+        opting_status = reviewer.rqcrevieweroptingdecision_set.filter(journal = journal).first().opting_status
     except (AttributeError, RQCReviewerOptingDecision.DoesNotExist):
         opting_status = None
     if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
