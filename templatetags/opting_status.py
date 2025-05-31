@@ -8,7 +8,7 @@ register = template.Library()
 def has_submitted_opting_status(context):
     request = context['request']
     try:
-        status = RQCReviewerOptingDecision.objects.get(reviewer=request.user)
+        status = RQCReviewerOptingDecision.objects.get(reviewer=request.user, journal=request.journal)
     except RQCReviewerOptingDecision.DoesNotExist:
         return False
     if status.is_valid:
@@ -20,7 +20,7 @@ def has_submitted_opting_status(context):
 def has_opted_in(context):
     request = context['request']
     try:
-        status = RQCReviewerOptingDecision.objects.get(reviewer=request.user)
+        status = RQCReviewerOptingDecision.objects.get(reviewer=request.user, journal=request.journal)
     except RQCReviewerOptingDecision.DoesNotExist:
         return False
     if status.is_valid and status.opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
