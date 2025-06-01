@@ -18,6 +18,8 @@ from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall
 
 logger = get_logger(__name__)
 
+@decorators.has_journal
+@decorators.editor_or_manager
 def manager(request):
     template = 'rqc_adapter/manager.html'
     journal = request.journal
@@ -61,7 +63,7 @@ def handle_journal_settings_update(request):
 # TODO logic to move the article to the next stage?
 # TODO check if user is editor or section editor
 @decorators.has_journal
-@decorators.production_user_or_editor_required
+@decorators.editor_user_required_and_can_see_pii
 def submit_article_for_grading(request, article_id):
     referer = request.META.get('HTTP_REFERER')
     article = get_object_or_404(
@@ -104,6 +106,9 @@ def submit_article_for_grading(request, article_id):
             return redirect(referer)
 
 # TODO check if user is editor or section editor
+# TODO dont reveal personal information to section editors
+@decorators.has_journal
+@decorators.editor_user_required_and_can_see_pii
 def rqc_grading_articles(request):
     """
     Displays a list of articles in the RQC Grading stage.
@@ -134,6 +139,11 @@ def rqc_grading_articles(request):
     return render(request, template, context)
 
 
+# Does an rqc request contain personally identifiable information?
+# TODO Check for conflict of interest?
+
+@decorators.has_journal
+@decorators.editor_user_required_and_can_see_pii # Checks if the user is an editor or section editor assigned to the article #TODO dos this work?
 def rqc_grade_article_reviews(request, article_id):
     article = get_object_or_404(
         submission_models.Article,
@@ -150,10 +160,15 @@ def rqc_grade_article_reviews(request, article_id):
 # TODO should a user be able to manually enter the url and change opting status?
 # TODO check user login?
 # TODO user should be able to get here manually
+
+# The request must provide a journal object because the opting decision in specific to the journal
+# Only reviewers should be able to opt in or out of participating in RQC
+@decorators.has_journal
+@decorators.reviewer_user_required
 def reviewer_opting_form(request):
     template = 'rqc_adapter/reviewer_opting_form.html'
     try:
-        opting_status = RQCReviewerOptingDecision.objects.get(reviewer=request.user)
+        opting_status = RQCReviewerOptingDecision.objects.get(reviewer=request.user, journal=request.journal)
         if opting_status.is_valid:
             messages.info(request,
                           'You have already decided whether to participate or not participate in RQC for this journal and journal year.')
@@ -168,13 +183,18 @@ def reviewer_opting_form(request):
 # TODO what if there is no logged in user?
 # TODO add info messages for other settings udapted
 # TODO check if user is a reviewer!!!
+
+# The request must provide a journal object because the opting decision in specific to the journal
+# The user must be a reviewer since only reviewers should be able to opt in or out
+@decorators.has_journal
+@decorators.reviewer_user_required
 def set_reviewer_opting_status(request):
     if request.method == 'POST':
         form = forms.ReviewerOptingForm(request.POST)
         if form.is_valid():
             opting_status = form.cleaned_data['status_selection_field']
             user = request.user
-            RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, opting_status=opting_status)
+            RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, journal= request.journal ,opting_status=opting_status)
             if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
                 messages.info(request, 'Thank you for choosing to participate in RQC!')
             else:
