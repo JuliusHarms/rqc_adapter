@@ -1,4 +1,4 @@
-from plugins.rqc_adapter.models import RQCReviewerOptingDecision
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCReviewerOptingDecisionForReviewAssignment
 from plugins.rqc_adapter.plugin_settings import has_salt, set_journal_salt, get_salt
 from plugins.rqc_adapter.utils import convert_review_decision_to_rqc_format, create_pseudo_address, encode_file_as_b64, \
     get_editorial_decision
@@ -103,12 +103,16 @@ def get_reviews_info(article, article_id, journal):
     :return: list of review info
     """
     review_set = []
-    review_assignments = article.reviewassignment_set.all()  # TODO what if there is not reviewassignment -> no call should be possible os that guarenteed?
+    # If a review assignment was not accepted this date field will be null.
+    # Reviewer that have not accepted a review assignment are not considered for grading by RQC
+    review_assignments = article.reviewassignment_set.filter(date_accepted__isnull = False) # TODO what if there is not reviewassignment -> no call should be possible os that guarenteed?
     num_reviews = 0
     for review_assignment in review_assignments:
         reviewer = review_assignment.reviewer
         # The review file is needed to transmit attachments but attachments are not yet supported by RQC
         #review_file = review_assignment.review_file
+        # TODO what if reviews are not yet completed?
+        # TODO are reviewassignment created if reviewers havent accepted yet? -> then a reviewassignment is made anyway...
         review_text = ''
         for review_answer in review_assignment.review_form_answers():  # TODO whats going on with multiple answers
             if review_answer.answer is not None:
@@ -124,7 +128,7 @@ def get_reviews_info(article, article_id, journal):
             'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
         }
 
-        reviewer_has_opted_in = has_opted_in(reviewer)
+        reviewer_has_opted_in = has_opted_in(reviewer, review_assignment)
 
         if reviewer_has_opted_in:
             review_data['text'] = review_text
@@ -137,15 +141,15 @@ def get_reviews_info(article, article_id, journal):
         review_set.append(review_data)
     return review_set
 
-def has_opted_in(reviewer, journal):
+def has_opted_in(reviewer, review_assignment):
     """ Determines if reviewer has opted into RQC
     :param reviewer: Reviewer object
-    :param journal: Journal object
+    :param review_assignment: Review Assignment object
     :return: True if reviewer has opted in and False otherwise
     """
     try:
-        opting_status = reviewer.rqcrevieweroptingdecision_set.filter(journal = journal).first().opting_status
-    except (AttributeError, RQCReviewerOptingDecision.DoesNotExist):
+        opting_status = reviewer.rqcrevieweroptingdecisionforreviewassignment_set.filter(review_assignment = review_assignment).first().opting_status
+    except (AttributeError, RQCReviewerOptingDecisionForReviewAssignment.DoesNotExist):
         opting_status = None
     if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
         return True
