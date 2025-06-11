@@ -42,8 +42,7 @@ class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
 
 class RQCDelayedCall(models.Model):
     remaining_tries = models.IntegerField(default=10, null=False)
-    article = models.ForeignKey(Article, null=False, on_delete=models.CASCADE)  # TODO cascade? probably yes but if reviews are holy maybe i should save the call data and then submit to rqc anyway
-    user = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.CASCADE, null=True) # TODO why is this here?
+    article = models.ForeignKey(Article, null=False, on_delete=models.CASCADE)
     last_attempt_at = models.DateTimeField()
     failure_reason = models.TextField()
     @property
