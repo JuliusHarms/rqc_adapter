@@ -60,10 +60,18 @@ def install():
 def hook_registry():
     Rqc_adapterPlugin.hook_registry()
     return {
-        'journal_editor_nav_block': {
+        'in_review_actions': {
                     'module': 'plugins.rqc_adapter.hooks',
-                    'function': 'render_rqc_grading_task',
+                    'function': 'render_rqc_grading_actions',
                     },
+        'reviewer_dashboard_content': {
+            'module': 'plugins.rqc_adapter.hooks',
+            'function': 'render_reviewer_opting_link',
+        },
+        'review_form_element': {
+            'module': 'plugins.rqc_adapter.hooks',
+            'function': 'render_reviewer_opting_form',
+        }
     }
 
 
