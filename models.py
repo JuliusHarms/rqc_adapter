@@ -58,3 +58,7 @@ class RQCDelayedCall(models.Model):
     def delete_self(self):
         self.delete()
 
+    class Meta:
+        verbose_name = "RQC Delayed Call"
+        verbose_name_plural = "RQC Delayed Calls"
+
