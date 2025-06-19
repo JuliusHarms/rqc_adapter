@@ -51,14 +51,10 @@ def install():
     update_settings(
         file_path='plugins/rqc_adapter/install/settings.json'
     )
-    # TODO check salt values for uniqueness
     journals = Journal.objects.all()
     setting = Setting.objects.get(name='rqc_journal_salt')
     for journal in journals:
-        salt = generate_random_salt()
-        setting_value = SettingValue(setting=setting, value=salt, journal=journal)
-        logger.info('Set rqc_journal salt to: %s for journal: %s', salt, journal.name) #From a security standpoint is this ok? Test later.
-        setting_value.save()
+        set_journal_salt(journal)
 
 
 def hook_registry():
@@ -107,6 +103,8 @@ def set_journal_salt(journal):
     setting = Setting.objects.filter(name='rqc_journal_salt')
     setting_value = SettingValue(setting=setting, value=salt, journal=journal)
     setting_value.save()
+    logger.info('Set rqc_journal salt to: %s for journal: %s', salt,
+                journal.name)  # From a security standpoint is this ok? Test later.
     return salt
 
 def has_salt(journal):
