@@ -40,6 +40,10 @@ class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
     reviewer = models.OneToOneField(AUTH_USER_MODEL, null=False, on_delete=models.CASCADE)
     review_assignment = models.ForeignKey(ReviewAssignment, null=False, on_delete=models.CASCADE)
 
+    class Meta:
+        verbose_name = "RQC Reviewer Opting Decision for ReviewAssignment"
+        verbose_name_plural = "RQC Reviewer Opting Decisions for ReviewAssignments"
+
 class RQCDelayedCall(models.Model):
     remaining_tries = models.IntegerField(default=10, null=False)
     article = models.ForeignKey(Article, null=False, on_delete=models.CASCADE)
