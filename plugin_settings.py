@@ -68,7 +68,7 @@ def hook_registry():
             'module': 'plugins.rqc_adapter.hooks',
             'function': 'render_reviewer_opting_link',
         },
-        'review_form_element': {
+        'review_form_guidelines': {
             'module': 'plugins.rqc_adapter.hooks',
             'function': 'render_reviewer_opting_form',
         }

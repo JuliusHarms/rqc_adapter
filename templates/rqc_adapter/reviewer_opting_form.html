@@ -11,10 +11,26 @@
             <br>
             See <a href="https://reviewqualitycollector.org/t/faq">reviewqualitycollector.org/t/faq</a> for details. The agreement covers all my reviews for the present journal in the present calendar year; a separate one is needed for any other journal and any other year.
         </p>
-        <form method="POST" action= "{% url 'rqc_adapter_set_reviewer_opting_status' %}">
+        <form method="POST" id="rqc_opting_form" action= "{% url 'rqc_adapter_set_reviewer_opting_status' %}">
             {% csrf_token %}
             {{ form }}
              <button type="submit" class="button success">Submit</button>
         </form>
     </div>
 {% endblock body %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rqc_opting_form = document.querySelector("#rqc_opting_form");
+        const forms = document.querySelectorAll('form[method="POST"][enctype="multipart/form-data"]');
+        const review_form = forms[1];
+        let has_submitted = false;
+        rqc_opting_form.onsubmit = function(e) {
+            has_submitted = true;
+        }
+        review_form.onsubmit = function(e) {
+            if (!has_submitted) {
+                e.preventDefault();
+            }
+        }
+    });
+</script>
