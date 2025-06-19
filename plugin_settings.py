@@ -17,16 +17,6 @@ SHORT_NAME = 'rqc_adapter'
 MANAGER_URL = 'rqc_adapter_manager'
 JANEWAY_VERSION = "1.3.8"
 
-# Workflow Settings
-IS_WORKFLOW_PLUGIN = True
-JUMP_URL = 'rqc_grade_article_reviews'
-HANDSHAKE_URL = 'rqc_adapter_rqc_grading_articles'
-ARTICLE_PK_IN_HANDSHAKE_URL = True
-STAGE = 'rqc_adapter_plugin'
-KANBAN_CARD = ''
-DASHBOARD_TEMPLATE = 'rqc_adapter/dashboard.html'
-
-
 logger = get_logger(__name__)
 
 class Rqc_adapterPlugin(plugins.Plugin):
@@ -41,10 +31,7 @@ class Rqc_adapterPlugin(plugins.Plugin):
     janeway_version = JANEWAY_VERSION
 
     # TODO workflow settings correct?
-    is_workflow_plugin = True
-    handshake_url = HANDSHAKE_URL
-    article_pk_in_handshake_url = ARTICLE_PK_IN_HANDSHAKE_URL
-
+    is_workflow_plugin = False
 
 def install():
     Rqc_adapterPlugin.install()
