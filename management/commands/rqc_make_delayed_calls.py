@@ -9,8 +9,6 @@ from plugins.rqc_adapter.models import RQCDelayedCall
 from plugins.rqc_adapter.plugin_settings import get_journal_id, get_journal_api_key
 from plugins.rqc_adapter.rqc_calls import fetch_post_data, call_rqc_api, call_mhs_submission
 
-#TODO delayed mhsapicheck calls doesnt make sense right?
-
 try:
     import crontab
 except (ImportError, ModuleNotFoundError):
@@ -37,11 +35,10 @@ class Command(BaseCommand):
         queue = RQCDelayedCall.objects.filter(last_attempt_at__gte=now()+timedelta(hours=24)).order_by('-last_attempt_at')
         for call in queue:
             if call.is_valid:
-                user = call.user
                 article = call.article
                 article_id = call.article.pk
                 journal = call.article.journal
-                post_data = fetch_post_data(user ,article, article_id, journal)
+                post_data = fetch_post_data(article = article, article_id = article_id, journal = journal)
                 response = call_mhs_submission(get_journal_id(journal), get_journal_api_key(journal), article_id, post_data)
                 call.remaining_tries = call.remaining_tries + 1
                 #TODO handle response
