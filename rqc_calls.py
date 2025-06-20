@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timezone
 import requests
 from requests import RequestException
-
+from utils.logger import get_logger
 from utils.models import Version
 
 from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
@@ -10,6 +10,7 @@ from plugins.rqc_adapter.config import VERSION
 from plugins.rqc_adapter.plugin_settings import get_journal_api_key, get_journal_id
 from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 
+logger = get_logger(__name__)
 
 
 def call_mhs_apikeycheck(journal_id: str, api_key: str) -> dict:
@@ -68,7 +69,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         headers = {
             'X-Rqc-Api-Version': API_VERSION,
             'X-Rqc-Mhs-Version': f'Janeway {current_version.number}',
-            'X-Rqc-Mhs-Adapter': f'RQC-Adapter {VERSION}',
+            'X-Rqc-Mhs-Adapter': f'RQC plugin {VERSION} https://github.com/JuliusHarms/janeway-rqcplugin',
             'X-Rqc-Time': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
             'Authorization': f'Bearer {api_key}',
         }
@@ -76,7 +77,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
             #TODO If the adapter is open source, please include the URL of the public repository where the code can be found. The information is used by human beings on the RQC side for support and debugging.
             #headers['Content-Type'] = 'application/json'
             # todo make redirects work?
-            print(headers, post_data)
+            print(headers, post_data) #todo remove?
             response = requests.post(
                 url,
                 json = post_data,
@@ -92,6 +93,11 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
             )
         result['http_status_code'] = response.status_code
         result['success'] = response.ok
+
+        if response.ok:
+            logger.info(f'Sending the data to RQC succeeded. {response.status_code}')
+        else:
+            logger.debug(f'Sending the data to RQC failed. {response.status_code}')
 
         if response.status_code == 200 & use_post:
             return result
