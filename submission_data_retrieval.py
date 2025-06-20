@@ -5,7 +5,7 @@ from plugins.rqc_adapter.utils import convert_review_decision_to_rqc_format, cre
 
 
 # TODO just article ? article already has id and journal...
-def fetch_post_data(user, article, article_id, journal, mhs_submissionpage = '', interactive = False):
+def fetch_post_data(article, article_id, journal, mhs_submissionpage = '', interactive = False, user=None ) :
     """ Generates and collects all information for a RQC submission
     :param user: User object
     :param article: Article object
