@@ -70,7 +70,7 @@ def hook_registry():
 # TODO test out what happens if you request revisions on an article
 def register_for_events():
     from plugins.rqc_adapter.rqc_calls import implicit_call_mhs_submission
-
+    # The RQC API requires an implicit call when the editorial decision is changed
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_ACCEPTED,
         implicit_call_mhs_submission,
@@ -97,7 +97,7 @@ def set_journal_salt(journal):
     Sets the journals salt to a newly random generated salt string
     TODO: user could change the value through database admin interface -> add warning not to do that
     :param journal: Journal object
-    :return: salt string
+    :return: Salt string
     """
     salt = generate_random_salt()
     setting = Setting.objects.filter(name='rqc_journal_salt')
@@ -110,14 +110,14 @@ def set_journal_salt(journal):
 def has_salt(journal):
     """
     :param journal: Journal object
-    :return: boolean
+    :return: Boolean
     """
     return SettingValue.objects.filter(setting__name='rqc_journal_salt', journal=journal).exists()
 
 def get_salt(journal):
     """ Gets the salt string for the journal
     :param journal: Journal object
-    :return: salt string
+    :return: Salt string
     """
     return SettingValue.objects.get(setting__name='rqc_journal_salt', journal=journal).value
 
@@ -182,9 +182,9 @@ def set_journal_api_key(journal_api_key: str, journal: Journal) -> dict:
 
 
 def get_journal_api_key(journal: Journal) -> str:
-    """ Retruns the journals API key
+    """ Returns the journals API key
     :param journal: Journal object
-    :return: str api key
+    :return:  API key string
     TODO errors
     """
     journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
@@ -193,7 +193,7 @@ def get_journal_api_key(journal: Journal) -> str:
 def has_journal_api_key(journal: Journal) -> bool:
     """ Checks if the journal API key exists
     :param journal: Journal object
-    :return: boolean
+    :return: Boolean
     """
     journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
     return SettingValue.objects.filter(setting=journal_api_key_setting, journal=journal).exists()
