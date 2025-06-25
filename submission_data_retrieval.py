@@ -25,7 +25,7 @@ def fetch_post_data(article, article_id, journal, mhs_submissionpage = '', inter
         submission_data['interactive_user'] = ''
 
     # If interactive user is set the call will open RQC to grade the submission
-    # mhs_submissionpage is used by RQC to redirect the user to Janeway afterwards
+    # mhs_submissionpage is used by RQC to redirect the user to Janeway after grading
     # So if interactive user is empty this should be empty as well
 
     if submission_data.get('interactive_user') != '':
@@ -41,11 +41,11 @@ def fetch_post_data(article, article_id, journal, mhs_submissionpage = '', inter
     # visible uid - remove characters that cant appear in url
     submission_data['visible_uid'] = str(article_id) #TODO only printable characters - no blanks?
 
-    # submission date check date time - utc
+    # RQC requires all datetime values to be in UTC
+    # Janeway uses aware timezones and the default timezone is UTC per the general settings
     submission_data['submitted'] = article.date_submitted.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     submission_data['author_set'] = get_authors_info(article)
-
 
     submission_data['edassgmt_set'] = get_editors_info(article)
 

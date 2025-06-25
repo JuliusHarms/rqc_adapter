@@ -24,7 +24,6 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--action', default="")
 # TODO multiple calls for the same article waht if the info is old?
-# add logs i guess
     def handle(self, *args, **options):
         """
         Retries failed RQC calls.

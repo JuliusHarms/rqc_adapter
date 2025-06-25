@@ -9,7 +9,7 @@ from django.conf import settings
 from core.models import SettingValue
 from review.models import RevisionRequest
 
-# As of API version 2023-09-06, RQC does not support file attachments.
+# As of API version 2023-09-06, RQC does not support file attachments
 def encode_file_as_b64(file_uuid: str, article_id: str) -> str:
     """
     Encodes the file as a base64 binary string.

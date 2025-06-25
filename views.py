@@ -1,8 +1,6 @@
 from django.utils.timezone import now
 from rest_framework.status import HTTP_307_TEMPORARY_REDIRECT
 
-from utils.logger import get_logger
-
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
@@ -15,8 +13,6 @@ from plugins.rqc_adapter import forms, plugin_settings
 from plugins.rqc_adapter.plugin_settings import set_journal_id, set_journal_api_key, has_salt, set_journal_salt, \
     get_journal_id, get_journal_api_key, has_journal_id, has_journal_api_key, get_salt
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall
-
-logger = get_logger(__name__)
 
 @decorators.has_journal
 @decorators.editor_or_manager
@@ -82,7 +78,6 @@ def submit_article_for_grading(request, article_id):
     #TODO add messages in templates
     # TODO what if no message?
     if not response['success']:
-        logger.debug(f'Sending the data to RQC failed. {response}') #logging ok?
         match response['http_status_code']:
             case 400:
                 messages.error(request, f'Sending the data to RQC failed. The message sent to RQC was malformed. Details: {response["message"]}')
