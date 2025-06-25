@@ -62,15 +62,18 @@ def get_authors_info(article):
     :param article: Article object
     :return: List of author information
     """
+    # The RQC API specifies that only information from correspondence authors
+    # should be transmitted. In janeway there can only be one correspondence author
+    # so the author_set will only contain one member.
     author = article.correspondence_author
-    author_order = article.articleauthororder_set.all()
+    author_order = article.articleauthororder_set.filter(author=author).first()
     author_set = []
     author_info = {
         'email': author.email[:2000],
         'firstname': author.first_name[:2000] if author.first_name else "",
         'lastname': author.last_name[:2000] if author.last_name else "",
         'orcid_id': author.orcid[:2000] if author.orcid else "",
-        'order_number': author_order.get(author=author).order+1
+        'order_number': author_order.order+1 # We add 1 because RQC author numbering starts at 1 while in Janeway counting starts at  0
     }
     author_set.append(author_info)
     return author_set
@@ -80,7 +83,7 @@ def get_editors_info(article):
     :param article: Article Object
     :return: List of editor info
     """
-    edassgmt_set = [] #TODO editor_set? editorassignment_set? edassgmt_set?
+    edassgmt_set = []
     editor_assignments = article.editorassignment_set.all()
     for editor_assignment in editor_assignments:
         editor = editor_assignment.editor
