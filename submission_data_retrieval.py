@@ -17,26 +17,25 @@ def fetch_post_data(article, article_id, journal, mhs_submissionpage = '', inter
     """
     submission_data = {}
 
-    # If interactive flag is set user information is transmitted to RQC
-
+    # If the interactive flag is set user information is transmitted to RQC.
     if interactive and hasattr(user, 'id') and user.id is not None:
         submission_data['interactive_user'] = user.email
     else:
         submission_data['interactive_user'] = ''
 
-    # If interactive user is set the call will open RQC to grade the submission
-    # mhs_submissionpage is used by RQC to redirect the user to Janeway after grading
-    # So if interactive user is empty this should be empty as well
-
+    # If interactive user is set the call will open RQC to grade the submission.
+    # mhs_submissionpage is used by RQC to redirect the user to Janeway after grading.
+    # So if interactive user is empty this should be empty as well.
     if submission_data.get('interactive_user') != '':
         submission_data['mhs_submissionpage'] = mhs_submissionpage  #todo open redirect vulnerabilities?
     else:
         submission_data['mhs_submissionpage'] = ''
 
-    # title - length?
-    submission_data['title'] = article.title
+    # RQC requires that single line strings don't exceed 2000 characters
+    # and that multi lines string don't exceed 200 000 characters.
+    # Field constraints in the models already enforce this, but we double-check for safety.
+    submission_data['title'] = article.title[:2000]
 
-    # external uid
     submission_data['external_uid'] = str(article_id)
     # visible uid - remove characters that cant appear in url
     submission_data['visible_uid'] = str(article_id) #TODO only printable characters - no blanks?
@@ -61,17 +60,17 @@ def fetch_post_data(article, article_id, journal, mhs_submissionpage = '', inter
 def get_authors_info(article):
     """ Returns the authors info for an article
     :param article: Article object
-    :return: Dictionary of author information
+    :return: List of author information
     """
     author = article.correspondence_author
     author_order = article.articleauthororder_set.all()
     author_set = []
     author_info = {
-        'email': author.email,
-        'firstname': author.first_name if author.first_name else "",
-        'lastname': author.last_name, #TODO what if this is empty? then a problem
-        'orcid_id': author.orcid if author.orcid else "",
-        'order_number': author_order.get(author=author).order+1  # TODO what if article,author is not unique
+        'email': author.email[:2000],
+        'firstname': author.first_name[:2000] if author.first_name else "",
+        'lastname': author.last_name[:2000] if author.last_name else "",
+        'orcid_id': author.orcid[:2000] if author.orcid else "",
+        'order_number': author_order.get(author=author).order+1
     }
     author_set.append(author_info)
     return author_set
@@ -79,17 +78,17 @@ def get_authors_info(article):
 def get_editors_info(article):
     """ Returns the information about the editors of the article
     :param article: Article Object
-    :return: Dictionary of editor info
+    :return: List of editor info
     """
     edassgmt_set = [] #TODO editor_set? editorassignment_set? edassgmt_set?
     editor_assignments = article.editorassignment_set.all()
     for editor_assignment in editor_assignments:
         editor = editor_assignment.editor
         editor_data = {
-            'email': editor.email,
-            'firstname': editor.first_name if editor.first_name else "",
-            'lastname': editor.last_name,
-            'orcid_id': editor.orcid if editor.orcid else "",
+            'email': editor.email[:2000],
+            'firstname': editor.first_name[:2000] if editor.first_name else "",
+            'lastname': editor.last_name[:2000] if editor.last_name else "",
+            'orcid_id': editor.orcid[:2000] if editor.orcid else "",
             'level': 1  # TODO what about different levels
         }
         edassgmt_set.append(editor_data)
@@ -98,9 +97,9 @@ def get_editors_info(article):
 def get_reviews_info(article, article_id, journal):
     """ Returns the info for all reviews for the given article in a list
     :param article: Article object
-    :param article_id: article id
+    :param article_id: Article id
     :param journal: Journal object
-    :return: list of review info
+    :return: List of review info
     """
     review_set = []
     # If a review assignment was not accepted this date field will be null.
