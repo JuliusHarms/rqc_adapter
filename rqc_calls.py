@@ -74,7 +74,6 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
             'Authorization': f'Bearer {api_key}',
         }
         if use_post:
-            #TODO If the adapter is open source, please include the URL of the public repository where the code can be found. The information is used by human beings on the RQC side for support and debugging.
             #headers['Content-Type'] = 'application/json'
             # todo make redirects work?
             print(headers, post_data) #todo remove?
