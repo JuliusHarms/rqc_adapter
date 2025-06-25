@@ -9,11 +9,13 @@ from django.conf import settings
 from core.models import SettingValue
 from review.models import RevisionRequest
 
-
-#TODO Error handling
+# As of API version 2023-09-06, RQC does not support file attachments.
 def encode_file_as_b64(file_uuid: str, article_id: str) -> str:
     """
     Encodes the file as a base64 binary string.
+    :param file_uuid: File UUID
+    :param article_id: Article ID
+    :return: base64 encoded file
     """
     file_path = os.path.join(settings.BASE_DIR, 'files', 'articles', article_id, file_uuid)
     with open(file_path, "rb") as f:
@@ -24,6 +26,8 @@ def encode_file_as_b64(file_uuid: str, article_id: str) -> str:
 def convert_review_decision_to_rqc_format(decision_string: str) -> str:
     """
     Maps the string representation of the reviewers decision to the string representation in RQC.
+    :param decision_string: The string representation of the reviewers decision.
+    :return: The string representation of the reviewers decision in RQC format.
     """
     match decision_string:
         case 'accept':
@@ -44,7 +48,7 @@ def get_editorial_decision(article):
     Gets the (most recent) editorial decision for the article. The default is empty "".
     TODO: to get the recent editorial decision i have to iterate over the stage history of the article
     :param article: Article object
-    :return string of the editorial decision
+    :return: String of the editorial decision
     """
     if article.is_accepted:
         return 'ACCEPT'
@@ -63,6 +67,9 @@ def get_editorial_decision(article):
 def create_pseudo_address(email, salt):
     """
     Create a pseudo email address.
+    :param email: Email address
+    :param salt: Salt to use for the pseudo address
+    :return: String of the pseudo address
     """
     combined = email + salt
     hash_obj = hashlib.sha1(combined.encode())
@@ -75,7 +82,8 @@ def generate_random_salt(length=12):
     """
     Generate a random salt string of specified length.
     Uses a mix of lowercase letters, uppercase letters, and digits.
-    TODO: generate a salt for every journal at install?
+    :param length: Length of the salt string.
+    :return: String of the salt value
     """
     characters = string.ascii_letters + string.digits
     salt = ''.join(secrets.choice(characters) for _ in range(length))
