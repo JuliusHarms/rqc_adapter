@@ -84,23 +84,44 @@ def get_editors_info(article):
     :return: List of editor info
     """
     edassgmt_set = []
+
     # RQC requires that the list of editor assignments is no longer than 20 entries.
     # RQC distinguishes between three levels of editors.
     # 1 - handling editor, 2 - section editor, 3 - chief editor
-    # Since RQC requires at least 1 handling editor to be assigned to the submission
-    # and
+    # One editor may appear multiple times in each role.
+
     editor_assignments = article.editorassignment_set.order_by('-assigned')[:20]
+
+    # Editors assigned to the article will be treated as handling editors by RQC.
+    # Editors that aren't assigned to the article but to the section of the article
+    # will be added to the assignment set so that they can grade the article reviews as well.
+
     for editor_assignment in editor_assignments:
         editor = editor_assignment.editor
-        editor_data = {
+        editor_data = get_editor_data(editor, 1)
+        edassgmt_set.append(editor_data)
+
+    section = article.section
+    if section is not None:
+        for section_editor in section.section_editors.all():
+            editor_data = get_editor_data(section_editor, 2)
+            edassgmt_set.append(editor_data)
+
+        for editor in section.editors.all():
+            editor_data = get_editor_data(editor, 3)
+            edassgmt_set.append(editor_data)
+
+    return edassgmt_set[:20]
+
+def get_editor_data(editor, level):
+    editor_data = {
             'email': editor.email[:2000],
             'firstname': editor.first_name[:2000] if editor.first_name else '',
             'lastname': editor.last_name[:2000] if editor.last_name else '',
             'orcid_id': editor.orcid[:2000] if editor.orcid else '',
-            'level': 1 if editor_assignment.type == 'editor' else 2
+            'level': level
         }
-        edassgmt_set.append(editor_data)
-    return edassgmt_set
+    return editor_data
 
 def get_reviews_info(article, article_id, journal):
     """ Returns the info for all reviews for the given article in a list
