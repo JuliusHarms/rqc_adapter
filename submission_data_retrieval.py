@@ -70,9 +70,9 @@ def get_authors_info(article):
     author_set = []
     author_info = {
         'email': author.email[:2000],
-        'firstname': author.first_name[:2000] if author.first_name else "",
-        'lastname': author.last_name[:2000] if author.last_name else "",
-        'orcid_id': author.orcid[:2000] if author.orcid else "",
+        'firstname': author.first_name[:2000] if author.first_name else '',
+        'lastname': author.last_name[:2000] if author.last_name else '',
+        'orcid_id': author.orcid[:2000] if author.orcid else '',
         'order_number': author_order.order+1 # We add 1 because RQC author numbering starts at 1 while in Janeway counting starts at  0
     }
     author_set.append(author_info)
@@ -84,15 +84,20 @@ def get_editors_info(article):
     :return: List of editor info
     """
     edassgmt_set = []
-    editor_assignments = article.editorassignment_set.all()
+    # RQC requires that the list of editor assignments is no longer than 20 entries.
+    # RQC distinguishes between three levels of editors.
+    # 1 - handling editor, 2 - section editor, 3 - chief editor
+    # Since RQC requires at least 1 handling editor to be assigned to the submission
+    # and
+    editor_assignments = article.editorassignment_set.order_by('-assigned')[:20]
     for editor_assignment in editor_assignments:
         editor = editor_assignment.editor
         editor_data = {
             'email': editor.email[:2000],
-            'firstname': editor.first_name[:2000] if editor.first_name else "",
-            'lastname': editor.last_name[:2000] if editor.last_name else "",
-            'orcid_id': editor.orcid[:2000] if editor.orcid else "",
-            'level': 1  # TODO what about different levels
+            'firstname': editor.first_name[:2000] if editor.first_name else '',
+            'lastname': editor.last_name[:2000] if editor.last_name else '',
+            'orcid_id': editor.orcid[:2000] if editor.orcid else '',
+            'level': 1 if editor_assignment.type == 'editor' else 2
         }
         edassgmt_set.append(editor_data)
     return edassgmt_set
@@ -167,10 +172,10 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
     """
     if reviewer_has_opted_in:
         reviewer_data = {
-            'email': reviewer.email,
-            'firstname': reviewer.first_name if reviewer.first_name else '',
-            'lastname': reviewer.last_name,
-            'orcid_id': reviewer.orcid if reviewer.orcid else '',
+            'email': reviewer.email[:2000],
+            'firstname': reviewer.first_name[:2000] if reviewer.first_name else '',
+            'lastname': reviewer.last_name[:2000] if reviewer.last_name else '',
+            'orcid_id': reviewer.orcid[:2000] if reviewer.orcid else '',
         }
     # If a reviewer has opted out RQC requires that the email address is anonymised and no additional data is transmitted
     else:
@@ -186,6 +191,8 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
         }
     return reviewer_data
 
+# As of API version 2023-09-06, RQC does not support file attachments
+# TODO maybe add code that respects the 64mb restraint
 def get_attachments_info(article_id, review_file):
     """ Gets the filename of the attachment and encodes its data. Attachments don't work yet on the side of RQC so in practice this should only be called with review_file=None
     :param review_file
@@ -193,8 +200,7 @@ def get_attachments_info(article_id, review_file):
     :return: list of dicts {filename: str, data: str}
     """
     attachment_set = []
-    # TODO attachments do not work yet on the side of RQC
-    if review_file is not None and not review_file.is_remote: #TODO handle remote files
+    if review_file is not None and not review_file.is_remote:
         attachment_set.append({
             'filename': review_file.original_filename,
             'data': encode_file_as_b64(review_file.uuid_filename,article_id),
