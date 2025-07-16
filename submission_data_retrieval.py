@@ -114,6 +114,11 @@ def get_editors_info(article):
     return edassgmt_set[:20]
 
 def get_editor_data(editor, level):
+    """
+    :param editor: Editor Object
+    :param level: Level of editor
+    :return: Dictionary of editor data
+    """
     editor_data = {
             'email': editor.email[:2000],
             'firstname': editor.first_name[:2000] if editor.first_name else '',
@@ -132,13 +137,12 @@ def get_reviews_info(article, article_id, journal):
     """
     review_set = []
     # If a review assignment was not accepted this date field will be null.
-    # Reviewer that have not accepted a review assignment are not considered for grading by RQC
+    # Reviewers that have not accepted a review assignment are not considered for grading by RQC
     review_assignments = article.reviewassignment_set.filter(date_accepted__isnull = False) # TODO what if there is not reviewassignment -> no call should be possible os that guarenteed?
     num_reviews = 0
     for review_assignment in review_assignments:
         reviewer = review_assignment.reviewer
         # The review file is needed to transmit attachments but attachments are not yet supported by RQC
-        #review_file = review_assignment.review_file
         # TODO what if reviews are not yet completed?
         # TODO are reviewassignment created if reviewers havent accepted yet? -> then a reviewassignment is made anyway...
         review_text = ''
@@ -213,11 +217,11 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
     return reviewer_data
 
 # As of API version 2023-09-06, RQC does not support file attachments
-# TODO maybe add code that respects the 64mb restraint
-def get_attachments_info(article_id, review_file):
+# TODO: Remote files might not work with this code
+def get_attachment(article, review_file):
     """ Gets the filename of the attachment and encodes its data. Attachments don't work yet on the side of RQC so in practice this should only be called with review_file=None
-    :param review_file
-    :param article_id
+    :param review_file: File object
+    :param article: Article object
     :return: list of dicts {filename: str, data: str}
     """
     attachment_set = []
