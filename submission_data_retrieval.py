@@ -155,23 +155,28 @@ def get_reviews_info(article, article_id, journal):
             'invited': review_assignment.date_requested.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'agreed': review_assignment.date_accepted.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'expected': review_assignment.date_due.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'submitted': review_assignment.date_complete.strftime('%Y-%m-%dT%H:%M:%SZ'),  # TODO correct timing utc?
+            'submitted': review_assignment.date_complete.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'is_html': True,  # review_file.mime_type in ["text/html"]  #TODO check can a review not be html
             'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
         }
 
         reviewer_has_opted_in = has_opted_in(reviewer, review_assignment)
 
+        # Review text should not exceed 200000 characters
         if reviewer_has_opted_in:
-            review_data['text'] = review_text
+            review_data['text'] = review_text[:200000]
         else:
             review_data['text'] = ''
 
         review_data['reviewer'] = get_reviewer_info(reviewer, reviewer_has_opted_in, journal)
 
-        review_data['attachment_set'] = get_attachments_info(article_id, review_file=None)
+        # Because RQC does not yet support attachments the attachment set is left empty
+        # review_data['attachment_set'] = get_attachment(article, review_file=article.review_file)
+        review_data['attachment_set'] = []
+
         review_set.append(review_data)
-    return review_set
+        # TODO does this go against the reviews are holy principle?
+    return review_set[:20]
 
 def has_opted_in(reviewer, review_assignment):
     """ Determines if reviewer has opted into RQC
@@ -225,10 +230,11 @@ def get_attachment(article, review_file):
     :return: list of dicts {filename: str, data: str}
     """
     attachment_set = []
-    if review_file is not None and not review_file.is_remote:
+    # File size should me no larger than 64mb
+    if review_file is not None and not review_file.is_remote and review_file.get_file_size(article) <= 67108864:
         attachment_set.append({
             'filename': review_file.original_filename,
-            'data': encode_file_as_b64(review_file.uuid_filename,article_id),
+            'data': encode_file_as_b64(review_file.uuid_filename,article),
         })
     return attachment_set
 
