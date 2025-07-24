@@ -55,7 +55,7 @@ def get_editorial_decision(article):
         return 'REJECT'
     else:
         try:
-            revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first() #TODO get the most recent one?
+            revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first()
             if revision_request.type == 'minor_revisions':
                 return 'MINORREVISION'
             else:

@@ -39,9 +39,9 @@ def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = 
     # Field constraints in the models already enforce this, but we double-check for safety.
     submission_data['title'] = article.title[:MAX_SINGLE_LINE_STRING_LENGTH]
 
-    submission_data['external_uid'] = str(article_id)
-    # visible uid - remove characters that cant appear in url
-    submission_data['visible_uid'] = str(article_id) #TODO only printable characters - no blanks?
+    submission_data['external_uid'] = str(article.pk)
+    # The primary key is just a number because Django's auto-increment pk is used
+    submission_data['visible_uid'] = str(article.pk)
 
     # RQC requires all datetime values to be in UTC
     # Janeway uses aware timezones and the default timezone is UTC per the general settings
@@ -51,12 +51,9 @@ def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = 
 
     submission_data['edassgmt_set'] = get_editors_info(article)
 
-    # TODO handle opted out reviewers
-    #TODO change order
-    submission_data['review_set'] = get_reviews_info(article, article_id, journal)
+    submission_data['review_set'] = get_reviews_info(article, journal)
 
-    submission_data['decision'] = get_editorial_decision(
-        article)  # TODO redo revision request by querying for revisionrequest objects
+    submission_data['decision'] = get_editorial_decision(article)  # TODO redo revision request by querying for revisionrequest objects -> prob fine but add test for it
     return submission_data
 
 
