@@ -20,16 +20,17 @@ def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = 
     submission_data = {}
 
     # If the interactive flag is set user information is transmitted to RQC.
-    if interactive and hasattr(user, 'id') and user.id is not None:
-        submission_data['interactive_user'] = user.email
-    else:
-        submission_data['interactive_user'] = ''
+    interactive_user_email = ''
+    if is_interactive and user and hasattr(user, 'email') and user.email:
+        interactive_user_email = user.email
+
+    submission_data['interactive_user'] = interactive_user_email
 
     # If interactive user is set the call will open RQC to grade the submission.
     # mhs_submissionpage is used by RQC to redirect the user to Janeway after grading.
     # So if interactive user is empty this should be empty as well.
-    if submission_data.get('interactive_user') != '':
-        submission_data['mhs_submissionpage'] = mhs_submissionpage  #todo open redirect vulnerabilities?
+    if submission_data['interactive_user']:
+        submission_data['mhs_submissionpage'] = mhs_submissionpage #TODO redirect vulnerabilities?
     else:
         submission_data['mhs_submissionpage'] = ''
 
