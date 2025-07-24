@@ -8,14 +8,13 @@ MAX_MULTI_LINE_STRING_LENGTH = 200000
 MAX_LIST_LENGTH = 20
 
 # TODO just article ? article already has id and journal...
-def fetch_post_data(article, article_id, journal, mhs_submissionpage = '', interactive = False, user=None ) :
+def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = False, user = None ) :
     """ Generates and collects all information for a RQC submission
     :param user: User object
     :param article: Article object
-    :param article_id: Article ID
     :param journal: Journal object
     :param mhs_submissionpage: str Redirect URL from RQC back to Janeway
-    :param interactive: Boolean flag to enable interactive call mode which redirects to RQC
+    :param is_interactive: Boolean flag to enable interactive call mode which redirects to RQC
     :return: Dictionary of submission data
     """
     submission_data = {}
