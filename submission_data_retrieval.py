@@ -3,6 +3,9 @@ from plugins.rqc_adapter.plugin_settings import has_salt, set_journal_salt, get_
 from plugins.rqc_adapter.utils import convert_review_decision_to_rqc_format, create_pseudo_address, encode_file_as_b64, \
     get_editorial_decision
 
+MAX_SINGLE_LINE_STRING_LENGTH = 2000
+MAX_MULTI_LINE_STRING_LENGTH = 200000
+MAX_LIST_LENGTH = 20
 
 # TODO just article ? article already has id and journal...
 def fetch_post_data(article, article_id, journal, mhs_submissionpage = '', interactive = False, user=None ) :
@@ -34,7 +37,7 @@ def fetch_post_data(article, article_id, journal, mhs_submissionpage = '', inter
     # RQC requires that single line strings don't exceed 2000 characters
     # and that multi lines string don't exceed 200 000 characters.
     # Field constraints in the models already enforce this, but we double-check for safety.
-    submission_data['title'] = article.title[:2000]
+    submission_data['title'] = article.title[:MAX_SINGLE_LINE_STRING_LENGTH]
 
     submission_data['external_uid'] = str(article_id)
     # visible uid - remove characters that cant appear in url
@@ -69,11 +72,11 @@ def get_authors_info(article):
     author_order = article.articleauthororder_set.filter(author=author).first()
     author_set = []
     author_info = {
-        'email': author.email[:2000],
-        'firstname': author.first_name[:2000] if author.first_name else '',
-        'lastname': author.last_name[:2000] if author.last_name else '',
-        'orcid_id': author.orcid[:2000] if author.orcid else '',
-        'order_number': author_order.order+1 # We add 1 because RQC author numbering starts at 1 while in Janeway counting starts at  0
+        'email': author.email[:MAX_SINGLE_LINE_STRING_LENGTH],
+        'firstname': author.first_name[:MAX_SINGLE_LINE_STRING_LENGTH] if author.first_name else '',
+        'lastname': author.last_name[:MAX_SINGLE_LINE_STRING_LENGTH] if author.last_name else '',
+        'orcid_id': author.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if author.orcid else '',
+        'order_number': author_order.order+1 # Add 1 because RQC author numbering starts at 1 while in Janeway counting starts at  0
     }
     author_set.append(author_info)
     return author_set
@@ -89,94 +92,81 @@ def get_editors_info(article):
     # RQC distinguishes between three levels of editors.
     # 1 - handling editor, 2 - section editor, 3 - chief editor
     # One editor may appear multiple times in each role.
-
-    editor_assignments = article.editorassignment_set.order_by('-assigned')[:20]
+    editor_assignments = article.editorassignment_set.order_by('-assigned')
 
     # Editors assigned to the article will be treated as handling editors by RQC.
     # Editors that aren't assigned to the article but to the section of the article
     # will be added to the assignment set so that they can grade the article reviews as well.
-
     for editor_assignment in editor_assignments:
-        editor = editor_assignment.editor
-        editor_data = get_editor_data(editor, 1)
-        edassgmt_set.append(editor_data)
+        edassgmt_set.append(get_editor_info(editor_assignment.editor, 1))
 
     section = article.section
     if section is not None:
         for section_editor in section.section_editors.all():
-            editor_data = get_editor_data(section_editor, 2)
-            edassgmt_set.append(editor_data)
+            edassgmt_set.append(get_editor_info(section_editor, 2))
 
         for editor in section.editors.all():
-            editor_data = get_editor_data(editor, 3)
-            edassgmt_set.append(editor_data)
+            edassgmt_set.append(get_editor_info(editor, 3))
 
-    return edassgmt_set[:20]
+    return edassgmt_set[:MAX_LIST_LENGTH]
 
-def get_editor_data(editor, level):
+def get_editor_info(editor, level):
     """
     :param editor: Editor Object
     :param level: Level of editor
     :return: Dictionary of editor data
     """
     editor_data = {
-            'email': editor.email[:2000],
-            'firstname': editor.first_name[:2000] if editor.first_name else '',
-            'lastname': editor.last_name[:2000] if editor.last_name else '',
-            'orcid_id': editor.orcid[:2000] if editor.orcid else '',
+            'email': editor.email[:MAX_SINGLE_LINE_STRING_LENGTH],
+            'firstname': editor.first_name[:MAX_SINGLE_LINE_STRING_LENGTH] if editor.first_name else '',
+            'lastname': editor.last_name[:MAX_SINGLE_LINE_STRING_LENGTH] if editor.last_name else '',
+            'orcid_id': editor.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if editor.orcid else '',
             'level': level
         }
     return editor_data
 
-def get_reviews_info(article, article_id, journal):
+def get_reviews_info(article, journal):
     """ Returns the info for all reviews for the given article in a list
     :param article: Article object
-    :param article_id: Article id
     :param journal: Journal object
     :return: List of review info
     """
     review_set = []
     # If a review assignment was not accepted this date field will be null.
     # Reviewers that have not accepted a review assignment are not considered for grading by RQC
-    review_assignments = article.reviewassignment_set.filter(date_accepted__isnull = False) # TODO what if there is not reviewassignment -> no call should be possible os that guarenteed?
-    num_reviews = 0
+    review_assignments = article.reviewassignment_set.filter(date_accepted__isnull = False).order_by('date_accepted') # TODO what if there is not reviewassignment -> no call should be possible os that guarenteed?
+    review_num = 1
     for review_assignment in review_assignments:
         reviewer = review_assignment.reviewer
-        # The review file is needed to transmit attachments but attachments are not yet supported by RQC
         # TODO what if reviews are not yet completed?
         # TODO are reviewassignment created if reviewers havent accepted yet? -> then a reviewassignment is made anyway...
-        review_text = ''
-        for review_answer in review_assignment.review_form_answers():  # TODO whats going on with multiple answers
-            if review_answer.answer is not None:
-                review_text = review_text + review_answer.answer
+        review_assignment_answers = [ra.answer for ra in review_assignment.review_form_answers()]
+        review_text = " ".join(review_assignment_answers)
+        reviewer_has_opted_in = has_opted_in(reviewer, review_assignment)
 
         review_data = {
-            'visible_id': str(num_reviews + 1),  # TODO is that ok?
+            # Visible id is just supposed to identify the review as a sort of name.
+            # An integer ordering by the acceptance date is used starting at 1 for the oldest review assignment.
+            'visible_id': str(review_num),
             'invited': review_assignment.date_requested.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'agreed': review_assignment.date_accepted.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'expected': review_assignment.date_due.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'submitted': review_assignment.date_complete.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'is_html': True,  # review_file.mime_type in ["text/html"]  #TODO check can a review not be html
+            'text': review_text[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer_has_opted_in else '',
+            # Review text is always HTML.
+            # This is due to the text input being collected in the TinyMCE widget.
+            'is_html': True,
             'suggested_decision': convert_review_decision_to_rqc_format(review_assignment.decision),
+            'reviewer': get_reviewer_info(reviewer, reviewer_has_opted_in, journal),
+            # Because RQC does not yet support attachments the attachment set is left empty.
+            # review_data['attachment_set'] = get_attachment(article, review_file=article.review_file)
+            'attachment_set': []
         }
 
-        reviewer_has_opted_in = has_opted_in(reviewer, review_assignment)
-
-        # Review text should not exceed 200000 characters
-        if reviewer_has_opted_in:
-            review_data['text'] = review_text[:200000]
-        else:
-            review_data['text'] = ''
-
-        review_data['reviewer'] = get_reviewer_info(reviewer, reviewer_has_opted_in, journal)
-
-        # Because RQC does not yet support attachments the attachment set is left empty
-        # review_data['attachment_set'] = get_attachment(article, review_file=article.review_file)
-        review_data['attachment_set'] = []
-
         review_set.append(review_data)
-        # TODO does this go against the reviews are holy principle?
-    return review_set[:20]
+        review_num = review_num + 1
+    # TODO does this go against the reviews are holy principle?
+    return review_set[:MAX_LIST_LENGTH]
 
 def has_opted_in(reviewer, review_assignment):
     """ Determines if reviewer has opted into RQC
@@ -202,10 +192,10 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
     """
     if reviewer_has_opted_in:
         reviewer_data = {
-            'email': reviewer.email[:2000],
-            'firstname': reviewer.first_name[:2000] if reviewer.first_name else '',
-            'lastname': reviewer.last_name[:2000] if reviewer.last_name else '',
-            'orcid_id': reviewer.orcid[:2000] if reviewer.orcid else '',
+            'email': reviewer.email[:MAX_SINGLE_LINE_STRING_LENGTH],
+            'firstname': reviewer.first_name[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer.first_name else '',
+            'lastname': reviewer.last_name[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer.last_name else '',
+            'orcid_id': reviewer.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer.orcid else '',
         }
     # If a reviewer has opted out RQC requires that the email address is anonymised and no additional data is transmitted
     else:
