@@ -46,7 +46,6 @@ def convert_review_decision_to_rqc_format(decision_string: str) -> str:
 def get_editorial_decision(article):
     """
     Gets the (most recent) editorial decision for the article. The default is empty "".
-    TODO: to get the recent editorial decision i have to iterate over the stage history of the article
     :param article: Article object
     :return: String of the editorial decision
     """
