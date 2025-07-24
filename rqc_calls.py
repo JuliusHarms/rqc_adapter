@@ -46,7 +46,7 @@ def implicit_call_mhs_submission(**kwargs) -> dict:
     api_key = get_journal_api_key(journal)
     submission_id = article.pk #TODO change sub id to something else?
     url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
-    post_data = fetch_post_data(user=request.user, article=article, article_id = article_id, journal= request.journal)
+    post_data = fetch_post_data(user=request.user, article=article, journal= request.journal)
     return call_rqc_api(url, api_key, use_post=True, post_data=post_data)
 
 def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict:

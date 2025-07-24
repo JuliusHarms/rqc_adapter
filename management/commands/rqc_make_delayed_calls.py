@@ -37,7 +37,7 @@ class Command(BaseCommand):
                 article = call.article
                 article_id = call.article.pk
                 journal = call.article.journal
-                post_data = fetch_post_data(article = article, article_id = article_id, journal = journal)
+                post_data = fetch_post_data(article = article, journal = journal)
                 response = call_mhs_submission(get_journal_id(journal), get_journal_api_key(journal), article_id, post_data)
                 call.remaining_tries = call.remaining_tries + 1
                 #TODO handle response

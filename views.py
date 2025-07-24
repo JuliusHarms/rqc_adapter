@@ -70,7 +70,8 @@ def submit_article_for_grading(request, article_id):
     journal = article.journal
     user = request.user
     mhs_submissionpage = request.META.get('HTTP_REFERER')
-    post_data = fetch_post_data(user, article, article_id, journal, mhs_submissionpage, interactive = True)
+    is_interactive = True
+    post_data = fetch_post_data(article, journal, mhs_submissionpage, is_interactive, user)
     response = call_mhs_submission(journal_id=get_journal_id(journal), api_key=get_journal_api_key(journal),
                                 submission_id=article_id, post_data=post_data) #Mode journal_id, journal_api_key?
     print(response)
