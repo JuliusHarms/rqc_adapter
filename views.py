@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 from django.utils.timezone import now
 from rest_framework.status import HTTP_307_TEMPORARY_REDIRECT
 
@@ -6,6 +10,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from plugins.rqc_adapter.rqc_calls import call_mhs_submission, fetch_post_data
 from security import decorators
+from security.decorators import production_manager_roles
 from submission import models as submission_models
 
 from core.models import SettingValue
@@ -15,7 +20,7 @@ from plugins.rqc_adapter.plugin_settings import set_journal_id, set_journal_api_
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall
 
 @decorators.has_journal
-@decorators.editor_or_manager
+@production_manager_roles
 def manager(request):
     template = 'rqc_adapter/manager.html'
     journal = request.journal

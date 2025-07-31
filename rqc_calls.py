@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 import json
 from datetime import datetime, timezone
 import requests

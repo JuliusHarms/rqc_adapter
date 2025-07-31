@@ -1,4 +1,7 @@
-#from django.conf.urls import url
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 from plugins.rqc_adapter import views
 from django.urls import re_path
 

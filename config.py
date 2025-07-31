@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 # API Configuration
 API_BASE_URL = "https://reviewqualitycollector.org/api"
 API_VERSION = "2023-09-06"

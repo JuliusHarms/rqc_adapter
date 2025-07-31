@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 from django.contrib import admin
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall, \
     RQCReviewerOptingDecisionForReviewAssignment

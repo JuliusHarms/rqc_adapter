@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 import base64
 import hashlib
 import os

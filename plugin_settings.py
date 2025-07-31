@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 from utils import plugins
 from utils.logger import get_logger
 from utils.install import update_settings

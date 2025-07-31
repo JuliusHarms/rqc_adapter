@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 import os
 
 from django.core.management.base import BaseCommand

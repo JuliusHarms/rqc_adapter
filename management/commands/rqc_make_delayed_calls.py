@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 import os
 from datetime import timedelta
 from time import sleep

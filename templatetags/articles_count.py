@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 from django import template
 
 from plugins.rqc_adapter import plugin_settings

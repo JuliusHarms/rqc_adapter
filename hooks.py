@@ -1,3 +1,7 @@
+"""
+© Julius Harms, Freie Universität Berlin 2025
+"""
+
 from django.template.loader import render_to_string
 from plugins.rqc_adapter import forms
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision
