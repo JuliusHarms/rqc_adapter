@@ -126,6 +126,9 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
             except json.decoder.JSONDecodeError:
                 result["message"] = f'Request succeeded but response body was malformed. Request status: {response.reason}'
             return result
+    #TODO look further at different types of request errors + appropriate response msg.
+    except (requests.ConnectionError, requests.Timeout) as e:
+        result['message'] = 'Unable to connect to API service. Please try again later.'
     except RequestException as e:
-        result["message"] = f'Connection Error: {str(e)}'
-        return result
+        result['message'] = f'API service returned an invalid response: {str(e)}'
+    return result
