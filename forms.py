@@ -1,7 +1,6 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
 """
-
 from django import forms
 from django.core.validators import RegexValidator
 
