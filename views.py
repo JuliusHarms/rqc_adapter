@@ -3,53 +3,76 @@
 """
 
 from django.utils.timezone import now
-from rest_framework.status import HTTP_307_TEMPORARY_REDIRECT
 
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+from utils.logger import get_logger
 
 from plugins.rqc_adapter.rqc_calls import call_mhs_submission, fetch_post_data
 from security import decorators
 from security.decorators import production_manager_roles
 from submission import models as submission_models
 
-from core.models import SettingValue
 from plugins.rqc_adapter import forms, plugin_settings
 from plugins.rqc_adapter.plugin_settings import set_journal_id, set_journal_api_key, has_salt, set_journal_salt, \
     get_journal_id, get_journal_api_key, has_journal_id, has_journal_api_key, get_salt
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall
+
+logger = get_logger(__name__)
 
 @decorators.has_journal
 @production_manager_roles
 def manager(request):
     template = 'rqc_adapter/manager.html'
     journal = request.journal
+    api_key_set = False
 
-    if has_journal_id(journal) and has_journal_api_key(journal):
+    if has_journal_id(journal) :
         journal_id = get_journal_id(journal)
-        journal_api_key = get_journal_api_key(journal)
-        form = forms.RqcSettingsForm(initial={'journal_id_field': journal_id, 'journal_api_key_field': journal_api_key})
+        form = forms.RqcSettingsForm(initial={'journal_id_field': journal_id})
     else:
         form = forms.RqcSettingsForm()
-    return render(request, template, {'form': form})
 
-#TODO create new settingvalue if object doesnt exist yet
+    if has_journal_api_key(journal):
+        api_key_set = True
+
+    return render(request, template, {'form': form, 'api_key_set': api_key_set})
+
 def handle_journal_settings_update(request):
-    journal = request.journal
     if request.method == 'POST':
+        template = 'rqc_adapter/manager.html'
+        journal = request.journal
         form = forms.RqcSettingsForm(request.POST)
+        user_id = request.user.id if hasattr(request, 'user') else None
         if form.is_valid():
-            journal_id = form.cleaned_data['journal_id_field']
-            set_journal_id(journal_id, journal)
-            journal_api_key = form.cleaned_data['journal_api_key_field']
-            set_journal_api_key(journal_api_key, journal)
+            try:
+                journal_id = form.cleaned_data['journal_id_field']
+                set_journal_id(journal_id, journal)
+                journal_api_key = form.cleaned_data['journal_api_key_field']
+                set_journal_api_key(journal_api_key, journal)
+
+                messages.success(request, 'RQC settings updated successfully.')
+                logger.info(f'RQC settings updated successfully for journal: {journal.name} by user: {user_id}.')
+                return redirect('rqc_adapter_manager')
+            except Exception as e:
+                messages.error(request, 'Settings update failed due to a system error.')
+                log_settings_error(journal.name, user_id, e)
+        else:
+            non_field_errors = form.non_field_errors()
+            for non_field_error in non_field_errors:
+                messages.error(request, 'Settings update failed. ' + non_field_error)
+                log_settings_error(journal.name, user_id, non_field_error)
+            for field_name, field_errors in form.errors.items():
+                if field_name != '__all__':
+                    field_label = form.fields[field_name].label
+                    for error in field_errors:
+                        messages.error(request, f'{field_label}: {error}')
+                        logger.error(journal.name, user_id, error)
+    else:
         return redirect('rqc_adapter_manager')
 
-    else:
-        journal_id = SettingValue.objects.get(setting__name='rqc_journal_id')
-        journal_api_key = SettingValue.objects.get(setting__name='rqc_journal_api_key')
-        form = forms.RqcSettingsForm(initial={'journal_id_field': journal_id.value, 'journal_api_key_field': journal_api_key.value})
-        return render(request,'rqc_adapter/manager.html',{'form':form})
+def log_settings_error(journal, user_id, error_msg):
+    logger.error(f'Failed to save RQC settings for journal {journal.name} by user: {user_id} due to {error_msg}')
 
 
 #TODO maybe save the data so for implicit calls it is not regenerated (except decision + additonal reviews)

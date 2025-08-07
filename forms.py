@@ -24,9 +24,9 @@ class RqcSettingsForm(forms.Form):
                           ' This value is secret and is used for authentication.'            
                           ' Ask your publisher to tell you yours or use RQC\'s Demo mode and create one yourself.')
 
-    #Validate submitted journal_id and api_key together
-    #should there be an option to only submit one or the other?
-    #add default values if values are already present
+    # Validate submitted journal_id and api_key together
+    # Since validation depends on both and we need to make sure only valid data is used
+    # to make API calls.
     def clean(self):
         cleaned_data = super().clean()
         journal_id = cleaned_data.get('journal_id_field')
@@ -34,12 +34,22 @@ class RqcSettingsForm(forms.Form):
         if journal_id and api_key:
             try:
                 call_result = call_mhs_apikeycheck(journal_id, api_key)
-                if not call_result["success"]:
-                    error_msg = call_result['message']
-                    raise forms.ValidationError(error_msg)
-            #Generic Exception
+            # Generic Exception
+            # Generally Exceptions are handled in rqc_calls.py by propagating appropriate error messages via call_results[message].
+            # If this doesn't happen we can only transmit a generic error message.
             except Exception as e:
-                raise forms.ValidationError("Unable to verify API key")
+                raise forms.ValidationError('Unable to verify API credentials.', code='verification_failed_generic', params={'exception': e})
+            if not call_result["success"]:
+                http_status_code = call_result.get('http_status_code')
+                error_msg = call_result.get('message')
+                message = ''
+                if error_msg:
+                    message += f'Details: {error_msg}'
+                if http_status_code:
+                    http_status_code = str(http_status_code)
+                    message = f'Status code: {http_status_code}. {message}'
+                error_dict = {'http_status_code': http_status_code, 'error_msg': call_result['message']}
+                raise forms.ValidationError(message, code=http_status_code, params=error_dict)
         return cleaned_data
 
 class ReviewerOptingForm(forms.Form):
