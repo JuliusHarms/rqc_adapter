@@ -9,6 +9,12 @@
         margin-bottom: 0.5rem;
         line-height: 1.4;
     }
+    .error_text {
+        font-size: 0.9em;
+        color: #e53e3e;
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
     .field_group {
         margin-bottom: 1rem;
     }
@@ -44,23 +50,30 @@
                         <strong>Journal ID</strong>
                 </label>
                 {{ form.journal_id_field }}
+                <div class="error_text">
+                    {{ form.journal_id_field.errors }}
+                </div>
                 <div class="help_text">
                     {{ form.journal_id_field.help_text | safe }}
                 </div>
-                {{ form.journal_id_field.errors }}
             </div>
             <div field_group>
                 <label for="{{ form.journal_api_key_field.id_for_label }}">
-                        <strong>Journal API Key</strong>
+                    <strong>Journal API Key</strong>
                 </label>
+                {% if api_key_set %}
+                    API key is currently set. Enter a new key to update.
+                {% endif %}
                 {{ form.journal_api_key_field }}
+                <div class="error_text">
+                    {{ form.journal_api_key_field.errors }}
+                </div>
                 <div class="help_text">
                     {{ form.journal_api_key_field.help_text | safe }}
                 </div>
-                {{ form.journal_api_key_field.errors }}
             </div>
             <div class="form_actions">
-                <button type="submit" class="button">Update settings</button>
+                <button type="submit" class="button">Update Settings</button>
             </div>
         </form>
     </div>
