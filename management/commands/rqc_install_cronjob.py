@@ -13,6 +13,7 @@ except (ImportError, ModuleNotFoundError):
     crontab = None
 
 # todo give credit
+# logging?
 class Command(BaseCommand):
     """
     Installs the cron task for retrying failed RQC calls.
