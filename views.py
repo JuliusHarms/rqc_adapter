@@ -1,7 +1,7 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
 """
-
+from django.db import transaction
 from django.utils.timezone import now
 
 from django.contrib import messages
@@ -47,13 +47,14 @@ def handle_journal_settings_update(request):
         if form.is_valid():
             try:
                 journal_id = form.cleaned_data['journal_id_field']
-                set_journal_id(journal_id, journal)
                 journal_api_key = form.cleaned_data['journal_api_key_field']
-                set_journal_api_key(journal_api_key, journal)
-
+                # journal_id and api_key are saved together as a pair.
+                # Because journal_id and api_key only serve as valid credentials as a pair and API calls with false credentials should be avoided
+                with transaction.atomic():
+                    set_journal_id(journal_id, journal)
+                    set_journal_api_key(journal_api_key, journal)
                 messages.success(request, 'RQC settings updated successfully.')
                 logger.info(f'RQC settings updated successfully for journal: {journal.name} by user: {user_id}.')
-                return redirect('rqc_adapter_manager')
             except Exception as e:
                 messages.error(request, 'Settings update failed due to a system error.')
                 log_settings_error(journal.name, user_id, e)
