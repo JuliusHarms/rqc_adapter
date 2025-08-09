@@ -72,6 +72,11 @@
                     {{ form.journal_api_key_field.help_text | safe }}
                 </div>
             </div>
+            <div class="error_text">
+                {% for error in form.non_field_errors %}
+                    {{error}}
+                {% endfor %}
+            </div>
             <div class="form_actions">
                 <button type="submit" class="button">Update Settings</button>
             </div>
