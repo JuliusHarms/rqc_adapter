@@ -23,8 +23,6 @@ def call_mhs_apikeycheck(journal_id: str, api_key: str) -> dict:
     :param journal_id: str: The ID of the journal to check
     :param api_key: str: The API key to validate
     :return:int: dict: Response data if available and valid or raises RequestException: If the request fails
-    TODO:
-        Display error to the user. Improve error handling...
     """
     url = f'{API_BASE_URL}/mhs_apikeycheck/{journal_id}'
     return call_rqc_api(url, api_key)
@@ -39,11 +37,10 @@ def call_mhs_submission(journal_id: str, api_key: str, submission_id, post_data:
 
 def implicit_call_mhs_submission(**kwargs) -> dict:
     """
-    TODO
+    TODO what if values don't exist yet....
     TODO unnecessary database calls... maybe put all the data collection in a separate function
     """
     article = kwargs['article']
-    article_id = article.pk
     request = kwargs['request']
     journal = article.journal
     journal_id = get_journal_id(journal)
@@ -62,7 +59,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
     }
 
     try:
-        #database access somewhere else is better
+        #TODO database access somewhere else is better
         try:
             current_version = Version.objects.all().order_by('-number').first()
             if not current_version:

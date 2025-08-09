@@ -34,7 +34,6 @@ class Rqc_adapterPlugin(plugins.Plugin):
     version = VERSION
     janeway_version = JANEWAY_VERSION
 
-    # TODO workflow settings correct?
     is_workflow_plugin = False
 
 def install():
@@ -90,16 +89,15 @@ def register_for_events():
 def set_journal_salt(journal):
     """
     Sets the journals salt to a newly random generated salt string
-    TODO: user could change the value through database admin interface -> add warning not to do that
     :param journal: Journal object
     :return: Salt string
     """
     salt = generate_random_salt()
-    setting = Setting.objects.filter(name='rqc_journal_salt')
+    setting = Setting.objects.get(name='rqc_journal_salt')
     setting_value = SettingValue(setting=setting, value=salt, journal=journal)
     setting_value.save()
     logger.info('Set rqc_journal salt to: %s for journal: %s', salt,
-                journal.name)  # From a security standpoint is this ok? Test later.
+                journal.name)  #TODO From a security standpoint is this ok? Test later.
     return salt
 
 def has_salt(journal):
@@ -116,27 +114,24 @@ def get_salt(journal):
     """
     return SettingValue.objects.get(setting__name='rqc_journal_salt', journal=journal).value
 
-def set_journal_id(journal_id: int, journal: Journal) -> dict:
+def set_journal_id(journal_id: int, journal: Journal):
     """
-    Set the journal id.
+    Set the journal ID.
     :param journal_id: The journal ID to set
     :param journal: Journal object
-    #TODO handle setting doesnt exists?
-    :return: A dictionary with status and message
     :raises: Setting.DoesNotExist: If the setting doesn't exist
+    :raises: ValueError: If journal ID is None or not an integer
     """
-    if not journal_id or not isinstance(journal_id, int):
-        return {"status": "error", "message": "Invalid journal ID"}
-
-    try:
-        journal_id_setting = Setting.objects.get(name='rqc_journal_id')
-        journal_id_setting_value = SettingValue(setting= journal_id_setting, value= journal_id, journal=journal)
-        journal_id_setting_value.save()
-        return {"status": "success", "message": "Journal Id updated successfully"}
-    except Setting.DoesNotExist:
-        return {"status": "error", "message": "Journal Id setting not found"}
-    except Exception as e:
-        return {"status": "error", "message": f"Error updating journal Id: {str(e)}"}
+    if journal_id is None:
+        raise ValueError('Journal ID cannot be None')
+    if not isinstance(journal_id, int):
+        raise ValueError('Journal ID must be an integer')
+    journal_id_setting = Setting.objects.get(name='rqc_journal_id')
+    # SettingsValue saves all values in a textfield in the database.
+    # Journal_ID is being type cast here to make this explicit.
+    # Otherwise, Django would handle the conversion itself implicitly.
+    journal_id_setting_value = SettingValue(setting= journal_id_setting, value= str(journal_id), journal=journal)
+    journal_id_setting_value.save()
 
 def has_journal_id(journal: Journal) -> bool:
     """ Checks if the journal has a journal ID
@@ -146,41 +141,36 @@ def has_journal_id(journal: Journal) -> bool:
     journal_id_setting = Setting.objects.get(name='rqc_journal_id')
     return SettingValue.objects.filter(setting=journal_id_setting, journal=journal).exists()
 
-def get_journal_id(journal: Journal) -> str:
+def get_journal_id(journal: Journal) -> int:
     """ Returns the journal ID
     :param journal: Journal object
     :return: journal ID
-    TODO - errors
+    :raises: Setting.DoesNotExist: If the setting doesn't exist
+    :raises: SettingsValues.DoesNotExists: If journal id is not set
     """
     journal_id_setting = Setting.objects.get(name='rqc_journal_id')
-    return SettingValue.objects.get(setting=journal_id_setting, journal=journal).value
+    return int(SettingValue.objects.get(setting=journal_id_setting, journal=journal).value)
 
-def set_journal_api_key(journal_api_key: str, journal: Journal) -> dict:
+def set_journal_api_key(journal_api_key: str, journal: Journal):
     """
     Set the journal API key.
     :param journal_api_key: The API key to set
     :param journal: Journal object
-    :return: A dictionary with status and message
-    :raises: Setting.DoesNotExist: If the setting doesn't exist'
+    :raises: Setting.DoesNotExist: If the setting doesn't exist
+    :raises: ValueError: If journal API key is None or not a string
     """
     if not journal_api_key or not isinstance(journal_api_key, str):
-        return {"status": "error", "message": "Invalid journal API key"}
-    try:
-        journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
-        journal_api_key_setting_value = SettingValue(setting=journal_api_key_setting, value= journal_api_key, journal=journal)
-        journal_api_key_setting_value.save()
-        return {"status": "success", "message": "Journal API key updated successfully"}
-    except Setting.DoesNotExist:
-        return {"status": "error", "message": "Journal API key setting not found"}
-    except Exception as e:
-        return {"status": "error", "message": f"Error updating journal API key: {str(e)}"}
-
+        raise ValueError('Journal API key must be a string')
+    journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
+    journal_api_key_setting_value = SettingValue(setting=journal_api_key_setting, value= journal_api_key, journal=journal)
+    journal_api_key_setting_value.save()
 
 def get_journal_api_key(journal: Journal) -> str:
     """ Returns the journals API key
     :param journal: Journal object
     :return:  API key string
-    TODO errors
+    :raises: Setting.DoesNotExist: If the setting doesn't exist
+    :raises: SettingValue.DoesNotExist: If the api key is not set
     """
     journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
     return SettingValue.objects.get(setting=journal_api_key_setting, journal=journal).value
