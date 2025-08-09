@@ -49,7 +49,7 @@ class RqcSettingsForm(forms.Form):
                     message += f'Details: {error_msg}'
                 if http_status_code:
                     http_status_code = str(http_status_code)
-                    message = f'Status code: {http_status_code}. {message}'
+                    message = f'HTTP status code: {http_status_code}. {message}'
                 error_dict = {'http_status_code': http_status_code, 'error_msg': call_result['message']}
                 raise forms.ValidationError(message, code=http_status_code, params=error_dict)
         return cleaned_data

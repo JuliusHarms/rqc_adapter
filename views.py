@@ -67,12 +67,18 @@ def handle_journal_settings_update(request):
                     field_label = form.fields[field_name].label
                     for error in field_errors:
                         messages.error(request, f'{field_label}: {error}')
-                        logger.error(journal.name, user_id, error)
+                        log_settings_error(journal.name, user_id, error)
+            # In the case of validation errors users aren't redirect to preserve and display
+            # field and non-field errors
+            return render(request, template, {'form': form})
+        # Users are redirected after post to prevent double submits
+        return redirect('rqc_adapter_manager')
+    # Ignore non-post requests
     else:
         return redirect('rqc_adapter_manager')
 
-def log_settings_error(journal, user_id, error_msg):
-    logger.error(f'Failed to save RQC settings for journal {journal.name} by user: {user_id} due to {error_msg}')
+def log_settings_error(journal_name, user_id, error_msg):
+    logger.error(f'Failed to save RQC settings for journal {journal_name} by user: {user_id}. Details: {error_msg}')
 
 
 #TODO maybe save the data so for implicit calls it is not regenerated (except decision + additonal reviews)

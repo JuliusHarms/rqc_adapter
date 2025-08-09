@@ -98,9 +98,9 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         result['success'] = response.ok
 
         if response.ok:
-            logger.info(f'Sending the data to RQC succeeded. {response.status_code}')
+            logger.info(f'Request to RQC succeeded with status code: {response.status_code}')
         else:
-            logger.debug(f'Sending the data to RQC failed. {response.status_code}')
+            logger.debug(f'Request to RQC failed with status code: {response.status_code}')
 
         if response.status_code == 200 & use_post:
             return result
