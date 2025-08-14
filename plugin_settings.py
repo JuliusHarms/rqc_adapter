@@ -42,9 +42,9 @@ def install():
         file_path='plugins/rqc_adapter/install/settings.json'
     )
     journals = Journal.objects.all()
-    setting = Setting.objects.get(name='rqc_journal_salt')
     for journal in journals:
-        set_journal_salt(journal)
+        if not has_salt(journal):
+            set_journal_salt(journal)
 
 
 def hook_registry():
@@ -94,8 +94,7 @@ def set_journal_salt(journal):
     """
     salt = generate_random_salt()
     setting = Setting.objects.get(name='rqc_journal_salt')
-    setting_value = SettingValue(setting=setting, value=salt, journal=journal)
-    setting_value.save()
+    SettingValue.objects.update_or_create(setting=setting, journal=journal, defaults={'value': salt})
     logger.info('Set rqc_journal salt to: %s for journal: %s', salt,
                 journal.name)  #TODO From a security standpoint is this ok? Test later.
     return salt
@@ -130,8 +129,7 @@ def set_journal_id(journal_id: int, journal: Journal):
     # SettingsValue saves all values in a textfield in the database.
     # Journal_ID is being type cast here to make this explicit.
     # Otherwise, Django would handle the conversion itself implicitly.
-    journal_id_setting_value = SettingValue(setting= journal_id_setting, value= str(journal_id), journal=journal)
-    journal_id_setting_value.save()
+    SettingValue.objects.update_or_create(setting= journal_id_setting, journal=journal, defaults= {'value': str(journal_id)})
 
 def has_journal_id(journal: Journal) -> bool:
     """ Checks if the journal has a journal ID
@@ -162,8 +160,7 @@ def set_journal_api_key(journal_api_key: str, journal: Journal):
     if not journal_api_key or not isinstance(journal_api_key, str):
         raise ValueError('Journal API key must be a string')
     journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
-    journal_api_key_setting_value = SettingValue(setting=journal_api_key_setting, value= journal_api_key, journal=journal)
-    journal_api_key_setting_value.save()
+    SettingValue.objects.update_or_create(setting=journal_api_key_setting, journal=journal, defaults= {'value': journal_api_key})
 
 def get_journal_api_key(journal: Journal) -> str:
     """ Returns the journals API key
