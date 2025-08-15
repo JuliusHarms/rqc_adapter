@@ -94,5 +94,20 @@ def generate_random_salt(length=12):
         salt = ''.join(secrets.choice(characters) for _ in range(length))
     return salt
 
-
-
+def has_opted_in_or_out(user, journal):
+    """
+    Check if a user has opted in/out or not.
+    :param user: Account object
+    :param journal: Journal object
+    :return: Boolean
+    """
+    try:
+        opting_decision = RQCReviewerOptingDecision.objects.filter(reviewer=user, journal=journal).order_by('opting_date').first()
+        if opting_decision is not None and opting_decision.is_valid:
+            opting_status = opting_decision.opting_status
+            if opting_status is not None and (opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN or opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_OUT):
+                return True
+        else:
+            return False
+    except RQCReviewerOptingDecision.DoesNotExist:
+        return False
