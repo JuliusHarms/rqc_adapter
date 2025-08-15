@@ -6,7 +6,7 @@ from datetime import timezone, datetime
 
 from django.db import models
 
-from core.janeway_global_settings import AUTH_USER_MODEL
+from core.models import Account
 from journal.models import Journal
 from submission.models import Article
 from review.models import ReviewAssignment
@@ -20,7 +20,7 @@ class RQCReviewerOptingDecision(models.Model):
 
     opting_status = models.IntegerField(choices=OptingChoices.choices, null=False, default=OptingChoices.UNDEFINED)
     opting_date = models.DateTimeField(auto_now_add=True, null=False)
-    reviewer = models.OneToOneField(AUTH_USER_MODEL, null=False, on_delete=models.CASCADE)
+    reviewer = models.OneToOneField(Account, null=False, on_delete=models.CASCADE)
     journal = models.ForeignKey(Journal, null=False, on_delete=models.CASCADE)
 
     @property
@@ -41,7 +41,7 @@ class RQCReviewerOptingDecision(models.Model):
 # TODO check this text
 class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
     opting_status = models.IntegerField(choices=RQCReviewerOptingDecision.OptingChoices.choices, null=False, default=RQCReviewerOptingDecision.OptingChoices.UNDEFINED)
-    reviewer = models.OneToOneField(AUTH_USER_MODEL, null=False, on_delete=models.CASCADE)
+    reviewer = models.OneToOneField(Account, null=False, on_delete=models.CASCADE)
     review_assignment = models.ForeignKey(ReviewAssignment, null=False, on_delete=models.CASCADE)
 
     class Meta:
@@ -53,6 +53,7 @@ class RQCDelayedCall(models.Model):
     article = models.ForeignKey(Article, null=False, on_delete=models.CASCADE)
     last_attempt_at = models.DateTimeField()
     failure_reason = models.TextField()
+
     @property
     def is_valid(self):
         if self.remaining_tries <= 0:
