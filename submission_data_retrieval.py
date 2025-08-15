@@ -169,6 +169,7 @@ def get_reviews_info(article, journal):
     # TODO does this go against the reviews are holy principle?
     return review_set[:MAX_LIST_LENGTH]
 
+#TODO does this work?
 def has_opted_in(reviewer, review_assignment):
     """ Determines if reviewer has opted into RQC
     :param reviewer: Reviewer object

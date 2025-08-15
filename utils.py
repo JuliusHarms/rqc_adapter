@@ -10,7 +10,8 @@ import string
 
 from django.conf import settings
 
-from core.models import SettingValue
+from core.models import SettingValue, Account
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision
 from review.models import RevisionRequest
 
 # As of API version 2023-09-06, RQC does not support file attachments

@@ -2,26 +2,39 @@
 © Julius Harms, Freie Universität Berlin 2025
 -->
 
-{% block title %}Take part in Review Quality Collector?{% endblock %}
-{% block body %}
-    <div class="row">
+<div class="title-area">
+   <h2>Take part in Review Quality Collector?</h2>
+</div>
+<div class="content">
+    <div class="callout info-box">
         <p>
-            <a href="https://reviewqualitycollector.org">Review Quality Collector (RQC)</a> is an initiative for improving the quality of scientific peer review. Its core is a mechanism that supplies a reviewer with a receipt for their work for each journal year. The receipt certifies the quality of the rewiewing work based on a journal-specific review quality definition. This turns reviewing into a source of reputation and so improves reviewer motivation and hence review quality.
+            <a href="https://reviewqualitycollector.org" target="_blank" rel="noopener noreferrer">Review Quality Collector (RQC)</a> is an initiative for improving the quality of scientific peer review.
+            Its core is a mechanism that supplies a reviewer with a receipt for their work for each journal year.
+            The receipt certifies the quality of the reviewing work based on a journal-specific review quality definition.
+            This turns reviewing into a source of reputation and so improves reviewer motivation and hence review quality.
         </p>
         <p>
-            If I agree, the journal will forward my review data (my identity, the review text, various metadata) to RQC and I will receive a reviewing receipt from RQC in exchange.
-            <br>
-            If I do not agree, neither my identity nor the review text will be passed on to RQC.
-            <br>
-            See <a href="https://reviewqualitycollector.org/t/faq">reviewqualitycollector.org/t/faq</a> for details. The agreement covers all my reviews for the present journal in the present calendar year; a separate one is needed for any other journal and any other year.
+             <strong>✓ If I agree:</strong> The journal will forward my review data (my identity, the review text, various metadata) to RQC and I will receive a reviewing receipt from RQC in exchange.
         </p>
-        <form method="POST" id="rqc_opting_form" action= "{% url 'rqc_adapter_set_reviewer_opting_status' %}">
-            {% csrf_token %}
-            {{ form }}
-             <button type="submit" class="button success">Submit</button>
-        </form>
+        <p>
+            <strong>✗ If I do not agree:</strong> Neither my identity nor the review text will be passed on to RQC.
+        </p>
+        <p>
+            See <a href="https://reviewqualitycollector.org/t/faq" target="_blank" rel="noopener noreferrer" >reviewqualitycollector.org/t/faq</a> for details.
+        </p>
     </div>
-{% endblock body %}
+    <div class="callout primary">
+        <p>
+            <strong>The agreement covers all my reviews for the present journal in the present calendar year; a separate one is needed for any other journal and any other year.</strong>
+        </p>
+    </div>
+    <form method="POST" id="rqc_opting_form" action= "{% url 'rqc_adapter_set_reviewer_opting_status' %}">
+        {% csrf_token %}
+        {{ form.status_selection_field }}
+        {{ form.status_selection_field.errors }}
+         <button type="submit" class="button success">Submit Decision</button>
+    </form>
+</div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const rqc_opting_form = document.querySelector("#rqc_opting_form");
