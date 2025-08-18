@@ -4,7 +4,7 @@
 
 from plugins.rqc_adapter import views
 from django.urls import re_path
-
+#TODO unused? look over
 urlpatterns = [
     re_path(r'^manager/$', views.manager, name='rqc_adapter_manager'),
     re_path(r'^manager/handle_journal_settings_update$', views.handle_journal_settings_update, name='rqc_adapter_handle_journal_settings_update'),

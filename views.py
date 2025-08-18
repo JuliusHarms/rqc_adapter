@@ -82,7 +82,7 @@ def log_settings_error(journal_name, user_id, error_msg):
     logger.error(f'Failed to save RQC settings for journal {journal_name} by user: {user_id}. Details: {error_msg}')
 
 
-#TODO maybe save the data so for implicit calls it is not regenerated (except decision + additonal reviews)
+#TODO maybe save the data so for implicit calls it is not regenerated (except decision + additional reviews)
 #TODO check if RQC size limits are respected
 #All one-line strings must be no longer than 2000 characters.
 #All multi-line strings (the review texts) must be no longer than 200000 characters.
@@ -212,7 +212,7 @@ def reviewer_opting_form(request):
 # TODO get user and opting submission info
 # TODO ? @login_required
 # TODO what if there is no logged in user?
-# TODO add info messages for other settings udapted
+# TODO add info messages for other settings updated
 # TODO check if user is a reviewer!!!
 
 # The request must provide a journal object because the opting decision in specific to the journal

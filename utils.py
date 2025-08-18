@@ -10,7 +10,7 @@ import string
 
 from django.conf import settings
 
-from core.models import SettingValue, Account
+from core.models import SettingValue
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision
 from review.models import RevisionRequest
 

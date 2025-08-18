@@ -17,7 +17,7 @@ from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 logger = get_logger(__name__)
 
 
-def call_mhs_apikeycheck(journal_id: str, api_key: str) -> dict:
+def call_mhs_apikeycheck(journal_id: int, api_key: str) -> dict:
     """
     Verify API key with the RQC service.
     :param journal_id: str: The ID of the journal to check
@@ -27,7 +27,7 @@ def call_mhs_apikeycheck(journal_id: str, api_key: str) -> dict:
     url = f'{API_BASE_URL}/mhs_apikeycheck/{journal_id}'
     return call_rqc_api(url, api_key)
 
-def call_mhs_submission(journal_id: str, api_key: str, submission_id, post_data: str) -> dict:
+def call_mhs_submission(journal_id: int, api_key: str, submission_id, post_data: str) -> dict:
     """
     TODO
     """
@@ -124,7 +124,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
                 result["message"] = f'Request succeeded but response body was malformed. Request status: {response.reason}'
             return result
     #TODO look further at different types of request errors + appropriate response msg.
-    except (requests.ConnectionError, requests.Timeout) as e:
+    except (requests.ConnectionError, requests.Timeout):
         result['message'] = 'Unable to connect to API service. Please try again later.'
     except RequestException as e:
         result['message'] = f'API service returned an invalid response: {str(e)}'

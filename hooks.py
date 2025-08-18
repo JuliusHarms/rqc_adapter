@@ -8,7 +8,7 @@ from plugins.rqc_adapter.models import RQCReviewerOptingDecision
 from plugins.rqc_adapter.plugin_settings import has_journal_api_key, has_journal_id
 from plugins.rqc_adapter.utils import has_opted_in_or_out
 
-
+# TODO work over
 def render_rqc_grading_action(context):
     request = context['request']
     string = render_to_string('rqc_adapter/grading_action.html', context={'article': context['article']})
