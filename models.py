@@ -14,9 +14,9 @@ from review.models import ReviewAssignment
 
 class RQCReviewerOptingDecision(models.Model):
     class OptingChoices(models.IntegerChoices):
-        UNDEFINED = 30, ""
-        OPT_IN = 31, "Yes, take part in RQC"
-        OPT_OUT = 32, "No, opt out from RQC"
+        UNDEFINED = 0, ""
+        OPT_IN = 1, "Yes, take part in RQC"
+        OPT_OUT = 2, "No, opt out from RQC"
 
     opting_status = models.IntegerField(choices=OptingChoices.choices, null=False, default=OptingChoices.UNDEFINED)
     opting_date = models.DateTimeField(auto_now_add=True, null=False)
@@ -43,6 +43,7 @@ class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
     opting_status = models.IntegerField(choices=RQCReviewerOptingDecision.OptingChoices.choices, null=False, default=RQCReviewerOptingDecision.OptingChoices.UNDEFINED)
     reviewer = models.OneToOneField(Account, null=False, on_delete=models.CASCADE)
     review_assignment = models.ForeignKey(ReviewAssignment, null=False, on_delete=models.CASCADE)
+    frozen = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "RQC Reviewer Opting Decision for ReviewAssignment"
