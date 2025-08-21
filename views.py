@@ -114,7 +114,7 @@ def submit_article_for_grading(request, article_id):
     response = call_mhs_submission(journal_id = api_credentials.journal_id,
                                    api_key = api_credentials.api_key,
                                    submission_id=article_id, post_data=post_data) #Mode journal_id, journal_api_key?
-    print(response)
+    print(response) #TODO remove
     # TODO handle errors and status response:
     #TODO add messages in templates
     # TODO what if no message?
