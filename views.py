@@ -14,9 +14,7 @@ from security.decorators import production_manager_roles
 from submission import models as submission_models
 
 from plugins.rqc_adapter import forms, plugin_settings
-from plugins.rqc_adapter.plugin_settings import set_journal_id, set_journal_api_key, has_salt, set_journal_salt, \
-    get_journal_id, get_journal_api_key, has_journal_id, has_journal_api_key, get_salt
-from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall, RQCJournalAPICredentials
 
 logger = get_logger(__name__)
 
@@ -26,16 +24,18 @@ def manager(request):
     template = 'rqc_adapter/manager.html'
     journal = request.journal
     api_key_set = False
+    try:
+        credentials = RQCJournalAPICredentials.objects.get(journal=journal)
+        if credentials.journal_id is not None:
+            journal_id = credentials.journal_id
+            form = forms.RqcSettingsForm(initial={'journal_id_field': journal_id})
+        else:
+            form = forms.RqcSettingsForm()
 
-    if has_journal_id(journal) :
-        journal_id = get_journal_id(journal)
-        form = forms.RqcSettingsForm(initial={'journal_id_field': journal_id})
-    else:
+        if credentials.api_key is not None and credentials.api_key != "":
+            api_key_set = True
+    except RQCJournalAPICredentials.DoesNotExist:
         form = forms.RqcSettingsForm()
-
-    if has_journal_api_key(journal):
-        api_key_set = True
-
     return render(request, template, {'form': form, 'api_key_set': api_key_set})
 
 def handle_journal_settings_update(request):
@@ -51,8 +51,7 @@ def handle_journal_settings_update(request):
                 # journal_id and api_key are saved together as a pair.
                 # Because journal_id and api_key only serve as valid credentials as a pair and API calls with false credentials should be avoided
                 with transaction.atomic():
-                    set_journal_id(journal_id, journal)
-                    set_journal_api_key(journal_api_key, journal)
+                    RQCJournalAPICredentials.objects.update_or_create(journal = journal, defaults={'journal_id': journal_id, 'api_key': journal_api_key})
                 messages.success(request, 'RQC settings updated successfully.')
                 logger.info(f'RQC settings updated successfully for journal: {journal.name} by user: {user_id}.')
             except Exception as e:
@@ -103,12 +102,18 @@ def submit_article_for_grading(request, article_id):
         journal=request.journal,
     )
     journal = article.journal
+    try:
+        api_credentials = RQCJournalAPICredentials.objects.get(journal=journal)
+    except RQCJournalAPICredentials.DoesNotExist:
+        messages.error(request, 'Review Quality Collector API credentials not found.')
+        return redirect(referer)
     user = request.user
     mhs_submissionpage = request.META.get('HTTP_REFERER')
     is_interactive = True
     post_data = fetch_post_data(article, journal, mhs_submissionpage, is_interactive, user)
-    response = call_mhs_submission(journal_id=get_journal_id(journal), api_key=get_journal_api_key(journal),
-                                submission_id=article_id, post_data=post_data) #Mode journal_id, journal_api_key?
+    response = call_mhs_submission(journal_id = api_credentials.journal_id,
+                                   api_key = api_credentials.api_key,
+                                   submission_id=article_id, post_data=post_data) #Mode journal_id, journal_api_key?
     print(response)
     # TODO handle errors and status response:
     #TODO add messages in templates

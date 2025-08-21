@@ -14,10 +14,12 @@ class RQCReviewerOptingDecisionAdmin(admin.ModelAdmin):
 class RQCReviewerOptingDecisionForReviewAssignmentAdmin(admin.ModelAdmin):
     list_display = ('reviewer', 'review_assignment', 'opting_status')
 
-
 class RQCDelayedCallAdmin(admin.ModelAdmin):
     list_display = ('article', 'remaining_tries', 'last_attempt_at', 'failure_reason')
 
+#TODO should i even do this?
+class RQCJournalAPICredentialsAdmin(admin.ModelAdmin):
+    list_display = ('journal', 'journal_id', 'api_key')
 
 admin.site.register(RQCReviewerOptingDecision, RQCReviewerOptingDecisionAdmin)
 admin.site.register(RQCReviewerOptingDecisionForReviewAssignment, RQCReviewerOptingDecisionForReviewAssignmentAdmin)

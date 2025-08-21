@@ -6,12 +6,13 @@ import json
 from datetime import datetime, timezone
 import requests
 from requests import RequestException
+
+from plugins.rqc_adapter.models import RQCJournalAPICredentials
 from utils.logger import get_logger
 from utils.models import Version
 
 from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
 from plugins.rqc_adapter.config import VERSION
-from plugins.rqc_adapter.plugin_settings import get_journal_api_key, get_journal_id
 from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 
 logger = get_logger(__name__)
@@ -43,8 +44,12 @@ def implicit_call_mhs_submission(**kwargs) -> dict:
     article = kwargs['article']
     request = kwargs['request']
     journal = article.journal
-    journal_id = get_journal_id(journal)
-    api_key = get_journal_api_key(journal)
+    try:
+        credentials = RQCJournalAPICredentials.objects.get(journal=journal) # TODO
+    except RQCJournalAPICredentials.DoesNotExist:
+        raise Exception('RQCJournalCredentials.DoesNotExist')
+    journal_id = credentials.journal_id
+    api_key = credentials.api_key
     submission_id = article.pk #TODO change sub id to something else?
     url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
     post_data = fetch_post_data(user=request.user, article=article, journal= request.journal)

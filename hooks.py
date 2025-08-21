@@ -11,7 +11,7 @@ from plugins.rqc_adapter.utils import has_opted_in_or_out
 # TODO work over
 def render_rqc_grading_action(context):
     request = context['request']
-    string = render_to_string('rqc_adapter/grading_action.html', context={'article': context['article']})
+    string = render_to_string('rqc_adapter/grading_action.html', context={'request': request,'article': context['article']})
     return string
 
 def render_reviewer_opting_form(context):

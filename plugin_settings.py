@@ -1,17 +1,16 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
 """
-
+from plugins.rqc_adapter.models import RQCJournalSalt
+from plugins.rqc_adapter.utils import generate_random_salt
 from utils import plugins
 from utils.logger import get_logger
 from utils.install import update_settings
 from journal.models import Journal
-from core.models import Setting, SettingValue
 from events import logic as events_logic
 from events.logic import Events
 
 from plugins.rqc_adapter.config import VERSION
-from plugins.rqc_adapter.utils import generate_random_salt
 
 PLUGIN_NAME = 'RQC Adapter Plugin'
 DISPLAY_NAME = 'RQC Adapter'
@@ -43,8 +42,11 @@ def install():
     )
     journals = Journal.objects.all()
     for journal in journals:
-        if not has_salt(journal):
-            set_journal_salt(journal)
+        # Generate Salt Values for all journals
+        if not RQCJournalSalt.objects.filter(journal=journal).exists():
+            salt = generate_random_salt()
+            RQCJournalSalt.objects.create(journal=journal, salt=salt)
+            logger.info('Set rqc_journal salt to: %s for journal: %s', salt, journal.name)  #TODO From a security standpoint is this ok? Test later.
 
 
 def hook_registry():
@@ -84,98 +86,3 @@ def register_for_events():
         Events.ON_REVISIONS_REQUESTED,
         implicit_call_mhs_submission,
     )
-
-
-def set_journal_salt(journal):
-    """
-    Sets the journals salt to a newly random generated salt string
-    :param journal: Journal object
-    :return: Salt string
-    """
-    salt = generate_random_salt()
-    setting = Setting.objects.get(name='rqc_journal_salt')
-    SettingValue.objects.update_or_create(setting=setting, journal=journal, defaults={'value': salt})
-    logger.info('Set rqc_journal salt to: %s for journal: %s', salt,
-                journal.name)  #TODO From a security standpoint is this ok? Test later.
-    return salt
-
-def has_salt(journal):
-    """
-    :param journal: Journal object
-    :return: Boolean
-    """
-    return SettingValue.objects.filter(setting__name='rqc_journal_salt', journal=journal).exists()
-
-def get_salt(journal):
-    """ Gets the salt string for the journal
-    :param journal: Journal object
-    :return: Salt string
-    """
-    return SettingValue.objects.get(setting__name='rqc_journal_salt', journal=journal).value
-
-def set_journal_id(journal_id: int, journal: Journal):
-    """
-    Set the journal ID.
-    :param journal_id: The journal ID to set
-    :param journal: Journal object
-    :raises: Setting.DoesNotExist: If the setting doesn't exist
-    :raises: ValueError: If journal ID is None or not an integer
-    """
-    if journal_id is None:
-        raise ValueError('Journal ID cannot be None')
-    if not isinstance(journal_id, int):
-        raise ValueError('Journal ID must be an integer')
-    journal_id_setting = Setting.objects.get(name='rqc_journal_id')
-    # SettingsValue saves all values in a textfield in the database.
-    # Journal_ID is being type cast here to make this explicit.
-    # Otherwise, Django would handle the conversion itself implicitly.
-    SettingValue.objects.update_or_create(setting= journal_id_setting, journal=journal, defaults= {'value': str(journal_id)})
-
-def has_journal_id(journal: Journal) -> bool:
-    """ Checks if the journal has a journal ID
-    :param journal: Journal object
-    :return: Boolean
-    """
-    journal_id_setting = Setting.objects.get(name='rqc_journal_id')
-    return SettingValue.objects.filter(setting=journal_id_setting, journal=journal).exists()
-
-def get_journal_id(journal: Journal) -> int:
-    """ Returns the journal ID
-    :param journal: Journal object
-    :return: journal ID
-    :raises: Setting.DoesNotExist: If the setting doesn't exist
-    :raises: SettingsValues.DoesNotExists: If journal id is not set
-    """
-    journal_id_setting = Setting.objects.get(name='rqc_journal_id')
-    return int(SettingValue.objects.get(setting=journal_id_setting, journal=journal).value)
-
-def set_journal_api_key(journal_api_key: str, journal: Journal):
-    """
-    Set the journal API key.
-    :param journal_api_key: The API key to set
-    :param journal: Journal object
-    :raises: Setting.DoesNotExist: If the setting doesn't exist
-    :raises: ValueError: If journal API key is None or not a string
-    """
-    if not journal_api_key or not isinstance(journal_api_key, str):
-        raise ValueError('Journal API key must be a string')
-    journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
-    SettingValue.objects.update_or_create(setting=journal_api_key_setting, journal=journal, defaults= {'value': journal_api_key})
-
-def get_journal_api_key(journal: Journal) -> str:
-    """ Returns the journals API key
-    :param journal: Journal object
-    :return:  API key string
-    :raises: Setting.DoesNotExist: If the setting doesn't exist
-    :raises: SettingValue.DoesNotExist: If the api key is not set
-    """
-    journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
-    return SettingValue.objects.get(setting=journal_api_key_setting, journal=journal).value
-
-def has_journal_api_key(journal: Journal) -> bool:
-    """ Checks if the journal API key exists
-    :param journal: Journal object
-    :return: Boolean
-    """
-    journal_api_key_setting = Setting.objects.get(name='rqc_journal_api_key')
-    return SettingValue.objects.filter(setting=journal_api_key_setting, journal=journal).exists()
