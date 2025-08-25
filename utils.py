@@ -7,6 +7,7 @@ import hashlib
 import os
 import secrets
 import string
+from datetime import timezone, datetime
 
 from django.conf import settings
 
@@ -112,3 +113,12 @@ def has_opted_in_or_out(user, journal):
             return False
     except RQCReviewerOptingDecision.DoesNotExist:
         return False
+
+def convert_date_to_rqc_format(date: datetime) -> str:
+    """
+    :return: Current time in UTC in RQC format.
+    """
+    if date is None:
+        return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    else:
+        return date.strftime('%Y-%m-%dT%H:%M:%SZ')

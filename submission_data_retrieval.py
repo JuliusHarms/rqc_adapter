@@ -5,7 +5,7 @@
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCReviewerOptingDecisionForReviewAssignment
 from plugins.rqc_adapter.plugin_settings import has_salt, set_journal_salt, get_salt
 from plugins.rqc_adapter.utils import convert_review_decision_to_rqc_format, create_pseudo_address, encode_file_as_b64, \
-    get_editorial_decision
+    get_editorial_decision, convert_date_to_rqc_format
 
 MAX_SINGLE_LINE_STRING_LENGTH = 2000
 MAX_MULTI_LINE_STRING_LENGTH = 200000
@@ -49,7 +49,7 @@ def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = 
 
     # RQC requires all datetime values to be in UTC
     # Janeway uses aware timezones and the default timezone is UTC per the general settings
-    submission_data['submitted'] = article.date_submitted.strftime('%Y-%m-%dT%H:%M:%SZ')
+    submission_data['submitted'] = convert_date_to_rqc_format(article.date_submitted)
 
     submission_data['author_set'] = get_authors_info(article)
 
@@ -150,10 +150,10 @@ def get_reviews_info(article, journal):
             # Visible id is just supposed to identify the review as a sort of name.
             # An integer ordering by the acceptance date is used starting at 1 for the oldest review assignment.
             'visible_id': str(review_num), #TODO what if the review isn't published yet??ß
-            'invited': review_assignment.date_requested.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'agreed': review_assignment.date_accepted.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'expected': review_assignment.date_due.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'submitted': review_assignment.date_complete.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'invited': convert_date_to_rqc_format(review_assignment.date_requested),
+            'agreed': convert_date_to_rqc_format(review_assignment.date_accepted),
+            'expected': convert_date_to_rqc_format(review_assignment.date_due),
+            'submitted': convert_date_to_rqc_format(review_assignment.date_complete),
             'text': review_text[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer_has_opted_in else '',
             # Review text is always HTML.
             # This is due to the text input being collected in the TinyMCE widget.
