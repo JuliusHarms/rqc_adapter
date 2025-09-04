@@ -68,7 +68,7 @@ class RQCDelayedCall(models.Model):
 
 class RQCJournalAPICredentials(models.Model):
     journal = models.ForeignKey(Journal, null=False, blank=False, on_delete=models.CASCADE)
-    journal_ID = models.IntegerField(null=False, blank=False)
+    rqc_journal_id = models.IntegerField(null=False, blank=False)
     api_key = models.TextField(null=False, blank=False)
 
     class Meta:

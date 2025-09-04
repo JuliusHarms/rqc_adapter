@@ -26,8 +26,8 @@ def manager(request):
     api_key_set = False
     try:
         credentials = RQCJournalAPICredentials.objects.get(journal=journal)
-        if credentials.journal_id is not None:
-            journal_id = credentials.journal_id
+        if credentials.rqc_journal_id is not None:
+            journal_id = credentials.rqc_journal_id
             form = forms.RqcSettingsForm(initial={'journal_id_field': journal_id})
         else:
             form = forms.RqcSettingsForm()
@@ -51,7 +51,7 @@ def handle_journal_settings_update(request):
                 # journal_id and api_key are saved together as a pair.
                 # Because journal_id and api_key only serve as valid credentials as a pair and API calls with false credentials should be avoided
                 with transaction.atomic():
-                    RQCJournalAPICredentials.objects.update_or_create(journal = journal, defaults={'journal_id': journal_id, 'api_key': journal_api_key})
+                    RQCJournalAPICredentials.objects.update_or_create(journal = journal, defaults={'rqc_journal_id': journal_id, 'api_key': journal_api_key})
                 messages.success(request, 'RQC settings updated successfully.')
                 logger.info(f'RQC settings updated successfully for journal: {journal.name} by user: {user_id}.')
             except Exception as e:
@@ -68,8 +68,7 @@ def handle_journal_settings_update(request):
                     for error in field_errors:
                         messages.error(request, f'{field_label}: {error}')
                         log_settings_error(journal.name, user_id, error)
-            # In the case of validation errors users aren't redirect to preserve and display
-            # field and non-field errors
+            # In the case of validation errors users aren't redirect to preserve and display field and non-field errors
             return render(request, template, {'form': form})
         # Users are redirected after post to prevent double submits
         return redirect('rqc_adapter_manager')
@@ -111,7 +110,7 @@ def submit_article_for_grading(request, article_id):
     mhs_submissionpage = request.META.get('HTTP_REFERER')
     is_interactive = True
     post_data = fetch_post_data(article, journal, mhs_submissionpage, is_interactive, user)
-    response = call_mhs_submission(journal_id = api_credentials.journal_id,
+    response = call_mhs_submission(journal_id = api_credentials.rqc_journal_id,
                                    api_key = api_credentials.api_key,
                                    submission_id=article_id, post_data=post_data) #Mode journal_id, journal_api_key?
     print(response) #TODO remove
