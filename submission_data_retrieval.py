@@ -78,7 +78,7 @@ def get_authors_info(article):
         'email': author.email[:MAX_SINGLE_LINE_STRING_LENGTH],
         'firstname': author.first_name[:MAX_SINGLE_LINE_STRING_LENGTH] if author.first_name else '',
         'lastname': author.last_name[:MAX_SINGLE_LINE_STRING_LENGTH] if author.last_name else '',
-        'orcid_id': author.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if author.orcid else '',
+        'orcid_id': author.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if author.orcid else None,
         'order_number': author_order.order+1 # Add 1 because RQC author numbering starts at 1 while in Janeway counting starts at  0
     }
     author_set.append(author_info)
@@ -123,7 +123,7 @@ def get_editor_info(editor, level):
             'email': editor.email[:MAX_SINGLE_LINE_STRING_LENGTH],
             'firstname': editor.first_name[:MAX_SINGLE_LINE_STRING_LENGTH] if editor.first_name else '',
             'lastname': editor.last_name[:MAX_SINGLE_LINE_STRING_LENGTH] if editor.last_name else '',
-            'orcid_id': editor.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if editor.orcid else '',
+            'orcid_id': editor.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if editor.orcid else None,
             'level': level
         }
     return editor_data
@@ -152,10 +152,10 @@ def get_reviews_info(article, journal):
             # Visible id is just supposed to identify the review as a sort of name.
             # An integer ordering by the acceptance date is used starting at 1 for the oldest review assignment.
             'visible_id': str(review_num), #TODO what if the review isn't published yet??ß
-            'invited': convert_date_to_rqc_format(review_assignment.date_requested),
-            'agreed': convert_date_to_rqc_format(review_assignment.date_accepted),
-            'expected': convert_date_to_rqc_format(review_assignment.date_due),
-            'submitted': convert_date_to_rqc_format(review_assignment.date_complete),
+            'invited': convert_date_to_rqc_format(review_assignment.date_requested) if review_assignment.date_requested else None,
+            'agreed': convert_date_to_rqc_format(review_assignment.date_accepted) if review_assignment.date_accepted else None,
+            'expected': convert_date_to_rqc_format(review_assignment.date_due) if review_assignment.date_due else None,
+            'submitted': convert_date_to_rqc_format(review_assignment.date_complete) if review_assignment.date_complete else None,
             'text': review_text[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer_has_opted_in else '',
             # Review text is always HTML.
             # This is due to the text input being collected in the TinyMCE widget.
@@ -200,7 +200,7 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
             'email': reviewer.email[:MAX_SINGLE_LINE_STRING_LENGTH],
             'firstname': reviewer.first_name[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer.first_name else '',
             'lastname': reviewer.last_name[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer.last_name else '',
-            'orcid_id': reviewer.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer.orcid else '',
+            'orcid_id': reviewer.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if reviewer.orcid else None,
         }
     # If a reviewer has opted out RQC requires that the email address is anonymised and no additional data is transmitted
     else:
@@ -209,7 +209,7 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
             'email': create_pseudo_address(reviewer.email, journal_salt.salt),
             'firstname': '',
             'lastname': '',
-            'orcid_id': ''
+            'orcid_id': None
         }
     return reviewer_data
 
