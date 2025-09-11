@@ -6,9 +6,8 @@ import json
 import requests
 from requests import RequestException
 
-from plugins.rqc_adapter.utils import get_current_time
-
 from plugins.rqc_adapter.models import RQCJournalAPICredentials
+from plugins.rqc_adapter.utils import convert_date_to_rqc_format
 from utils.logger import get_logger
 from utils.models import Version
 
@@ -77,7 +76,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
             'X-Rqc-Api-Version': API_VERSION,
             'X-Rqc-Mhs-Version': f'Janeway {current_version.number}',
             'X-Rqc-Mhs-Adapter': f'RQC plugin {VERSION} https://github.com/JuliusHarms/janeway-rqcplugin',
-            'X-Rqc-Time': get_current_time(),
+            'X-Rqc-Time': convert_date_to_rqc_format(),
             'Authorization': f'Bearer {api_key}',
         }
         if use_post:

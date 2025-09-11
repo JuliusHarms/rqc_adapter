@@ -114,8 +114,9 @@ def has_opted_in_or_out(user, journal):
     except RQCReviewerOptingDecision.DoesNotExist:
         return False
 
-def convert_date_to_rqc_format(date: datetime) -> str:
+def convert_date_to_rqc_format(date: datetime | None = None) -> str:
     """
+    :param date: datetime Date to convert to RQC format.
     :return: Current time in UTC in RQC format.
     """
     if date is None:

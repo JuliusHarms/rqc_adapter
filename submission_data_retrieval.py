@@ -11,8 +11,7 @@ MAX_SINGLE_LINE_STRING_LENGTH = 2000
 MAX_MULTI_LINE_STRING_LENGTH = 200000
 MAX_LIST_LENGTH = 20
 
-# TODO just article ? article already has id and journal...
-def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = False, user = None ) :
+def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = False, user = None ):
     """ Generates and collects all information for a RQC submission
     :param user: User object
     :param article: Article object
