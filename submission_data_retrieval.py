@@ -5,8 +5,7 @@
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCReviewerOptingDecisionForReviewAssignment, \
      RQCJournalSalt
 from plugins.rqc_adapter.utils import convert_review_decision_to_rqc_format, create_pseudo_address, encode_file_as_b64, \
-    get_editorial_decision, generate_random_salt
-    get_editorial_decision, convert_date_to_rqc_format
+    get_editorial_decision, generate_random_salt, convert_date_to_rqc_format
 
 MAX_SINGLE_LINE_STRING_LENGTH = 2000
 MAX_MULTI_LINE_STRING_LENGTH = 200000
