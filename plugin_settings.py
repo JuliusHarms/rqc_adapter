@@ -54,7 +54,7 @@ def hook_registry():
     return {
         'in_review_editor_actions': {
                     'module': 'plugins.rqc_adapter.hooks',
-                    'function': 'render_rqc_grading_actions',
+                    'function': 'render_rqc_grading_action',
         },
         'review_form_guidelines': {
             'module': 'plugins.rqc_adapter.hooks',

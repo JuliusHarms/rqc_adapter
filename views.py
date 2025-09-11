@@ -140,43 +140,8 @@ def submit_article_for_grading(request, article_id):
         else:
             return redirect(referer)
 
-# TODO check if user is editor or section editor
-# TODO dont reveal personal information to section editors
-@decorators.has_journal
-@decorators.editor_user_required_and_can_see_pii
-def rqc_grading_articles(request):
-    """
-    Displays a list of articles in the RQC Grading stage.
-    :param request: HttpRequest
-    :return: HttpResponse
-    """
-    article_filter = request.GET.get('filter', None)
-    articles_in_rqc_grading = submission_models.Article.objects.filter(
-        journal = request.journal,
-        stage = plugin_settings.STAGE,
-    )
-
-    # Articles with at least one submitted review should also be listed.
-    # In case an RQCGuardian wants to grade some of the reviews before making an editorial decision
-
-    reviewed_articles = submission_models.Article.objects.filter(
-        journal = request.journal,
-        stage = submission_models.STAGE_UNDER_REVIEW,
-        reviewassignment__is_complete = True
-    )
-
-    template = 'rqc_adapter/rqc_grading_articles.html'
-    context = {
-        'articles_in_rqc_grading': articles_in_rqc_grading,
-        'reviewed_articles': reviewed_articles,
-        'filter': article_filter,
-    }
-    return render(request, template, context)
-
-
 # Does an rqc request contain personally identifiable information?
 # TODO Check for conflict of interest?
-
 @decorators.has_journal
 @decorators.editor_user_required_and_can_see_pii # Checks if the user is an editor or section editor assigned to the article #TODO dos this work?
 def rqc_grade_article_reviews(request, article_id):
@@ -191,7 +156,6 @@ def rqc_grade_article_reviews(request, article_id):
     }
     return render(request, template, context)
 
-# TODO add reviewer opting
 # TODO should a user be able to manually enter the url and change opting status?
 # TODO check user login?
 # TODO user should be able to get here manually

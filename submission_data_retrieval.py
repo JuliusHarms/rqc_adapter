@@ -1,5 +1,8 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
+
+This file contains the fetch_post_data function that handles the task of retrieving the data that
+is sent to RQC in calls to the mhs_submission endpoint.
 """
 
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCReviewerOptingDecisionForReviewAssignment, \
