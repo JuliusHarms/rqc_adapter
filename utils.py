@@ -47,8 +47,6 @@ def convert_review_decision_to_rqc_format(decision_string: str) -> str:
         case _:
             return ''
 
-
-# TODO datetime correct?
 def get_editorial_decision(article):
     """
     Gets the (most recent) editorial decision for the article. The default is empty "".

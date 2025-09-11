@@ -43,6 +43,7 @@ class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
     opting_status = models.IntegerField(choices=RQCReviewerOptingDecision.OptingChoices.choices, null=False, blank=False, default=RQCReviewerOptingDecision.OptingChoices.UNDEFINED)
     reviewer = models.OneToOneField(Account, null=False, blank=False, on_delete=models.CASCADE)
     review_assignment = models.ForeignKey(ReviewAssignment, null=False, blank=False, on_delete=models.CASCADE)
+    frozen = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "RQC Reviewer Opting Decision for ReviewAssignment"
