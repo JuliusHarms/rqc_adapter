@@ -67,7 +67,7 @@ class RQCDelayedCall(models.Model):
         verbose_name_plural = "RQC Delayed Calls"
 
 class RQCJournalAPICredentials(models.Model):
-    journal = models.ForeignKey(Journal, null=False, blank=False, on_delete=models.CASCADE)
+    journal = models.OneToOneField(Journal, null=False, blank=False, on_delete=models.CASCADE)
     rqc_journal_id = models.IntegerField(null=False, blank=False)
     api_key = models.TextField(null=False, blank=False)
 
