@@ -2,9 +2,10 @@
 © Julius Harms, Freie Universität Berlin 2025
 """
 
-from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCReviewerOptingDecisionForReviewAssignment
-from plugins.rqc_adapter.plugin_settings import has_salt, set_journal_salt, get_salt
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCReviewerOptingDecisionForReviewAssignment, \
+     RQCJournalSalt
 from plugins.rqc_adapter.utils import convert_review_decision_to_rqc_format, create_pseudo_address, encode_file_as_b64, \
+    get_editorial_decision, generate_random_salt
     get_editorial_decision, convert_date_to_rqc_format
 
 MAX_SINGLE_LINE_STRING_LENGTH = 2000
@@ -202,12 +203,9 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
         }
     # If a reviewer has opted out RQC requires that the email address is anonymised and no additional data is transmitted
     else:
-        if not has_salt(journal):
-            salt = set_journal_salt(journal)
-        else:
-            salt = get_salt(journal)
+        journal_salt, created = RQCJournalSalt.objects.get_or_create(journal=journal, defaults={'salt': generate_random_salt()})
         reviewer_data = {
-            'email': create_pseudo_address(reviewer.email, salt),
+            'email': create_pseudo_address(reviewer.email, journal_salt.salt),
             'firstname': '',
             'lastname': '',
             'orcid_id': ''
