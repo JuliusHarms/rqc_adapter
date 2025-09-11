@@ -3,5 +3,15 @@
 -->
 
 <li>
-    <a href="{% url 'rqc_adapter_rqc_grade_article_reviews' article.pk %}" class="expanded"><span class="fa fa-star"></span> RQC-Grade the Reviews </a>
+    <a href="{% url 'rqc_adapter_rqc_grade_article_reviews' article.pk %}" class="expanded" id="rqc_grade_reviews"><span class="fa fa-star"></span> RQC-Grade the Reviews </a>
 </li>
+<script>
+    document.getElementById("rqc_grade_reviews").addEventListener("click", function (event) {
+        console.log("clicked");
+        event.preventDefault();
+        let userConfirm = confirm("You are about to navigate to an external website. Do you want to continue?");
+        if (userConfirm) {
+            window.open(event.target.href, '_blank');
+        }
+    })
+</script>
