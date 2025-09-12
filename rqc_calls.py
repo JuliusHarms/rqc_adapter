@@ -81,7 +81,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
         else:
             logger.debug(f'Request to RQC failed with status code: {response.status_code}')
 
-        if response.ok:
+        if response.ok and use_post:
             RQCCall.objects.get_or_create(article=article, defaults = {'editor_assignments': post_data['edassgmnt_set']})
 
         if response.status_code == 200 and use_post:
