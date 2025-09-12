@@ -85,9 +85,8 @@ class RQCJournalAPICredentials(models.Model):
         verbose_name = "RQC Journal Credentials"
         verbose_name_plural = "RQC Journal Credentials"
 
-
 class RQCJournalSalt(models.Model):
-    journal = models.ForeignKey(Journal, null=False, blank=False, on_delete=models.CASCADE)
+    journal = models.OneToOneField(Journal, null=False, blank=False, on_delete=models.CASCADE)
     salt = models.TextField(null=False, blank=False)
     class Meta:
         verbose_name = "RQC Journal Salt"
