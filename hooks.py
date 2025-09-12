@@ -28,7 +28,7 @@ def render_rqc_grading_action(context):
     # If there are review assignments for the article that have been accepted
     # but not yet completed the reviewer needs to be informed before sending the
     # data to RQC.
-    if ReviewAssignment.objects.filter(article=article, date_accepted__isnull=False, date_complete__isnull=False ).exists():
+    if ReviewAssignment.objects.filter(article=article, date_accepted__isnull=False, is_complete=True).exists():
         has_outstanding_reviews = True
     else:
         has_outstanding_reviews = False
