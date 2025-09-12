@@ -28,41 +28,20 @@ def call_mhs_apikeycheck(journal_id: int, api_key: str) -> dict:
     url = f'{API_BASE_URL}/mhs_apikeycheck/{journal_id}'
     return call_rqc_api(url, api_key)
 
-def call_mhs_submission(journal_id: int, api_key: str, submission_id, post_data: str) -> dict:
+def call_mhs_submission(journal_id: int, api_key: str, submission_id, post_data: str, article=None) -> dict:
     """
     TODO
     """
     url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
-    print(url)
-    return call_rqc_api(url , api_key, use_post=True, post_data=post_data)
+    return call_rqc_api(url , api_key, use_post=True, post_data=post_data, article=article)
 
-def implicit_call_mhs_submission(**kwargs) -> dict:
-    """
-    TODO what if values don't exist yet....
-    TODO unnecessary database calls... maybe put all the data collection in a separate function
-    """
-    article = kwargs['article']
-    request = kwargs['request']
-    journal = article.journal
-    try:
-        credentials = RQCJournalAPICredentials.objects.get(journal=journal) # TODO
-    except RQCJournalAPICredentials.DoesNotExist:
-        raise Exception('RQCJournalCredentials.DoesNotExist')
-    journal_id = credentials.journal_id
-    api_key = credentials.api_key
-    submission_id = article.pk #TODO change sub id to something else?
-    url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
-    post_data = fetch_post_data(user=request.user, article=article, journal= request.journal)
-    return call_rqc_api(url, api_key, use_post=True, post_data=post_data)
-
-def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict:
+def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article=None) -> dict:
     result = {
         'success': False,
         'http_status_code': None,
         'message': None,
         'redirect_target': None,
     }
-
     try:
         #TODO database access somewhere else is better
         try:
@@ -104,7 +83,10 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None) -> dict
         else:
             logger.debug(f'Request to RQC failed with status code: {response.status_code}')
 
-        if response.status_code == 200 & use_post:
+        if response.ok:
+            RQCCall.objects.get_or_create(article=article, defaults = {'editor_assignments': post_data['edassgmnt_set']})
+
+        if response.status_code == 200 and use_post:
             return result
         # Otherwise try to parse the body
         else:
