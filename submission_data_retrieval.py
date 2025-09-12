@@ -85,10 +85,22 @@ def get_authors_info(article):
     return author_set
 
 def get_editors_info(article):
-    """ Returns the information about the editors of the article
+    """ Returns the information about the editors of the article. Retrieves saved list from
+    RQCCall model if it exists.
     :param article: Article Object
     :return: List of editor info
     """
+    # If a submission call has already been successfully made for the article
+    # we retrieve the already submitted editor list since the RQC API requires that the field
+    # doesn't change in subsequent calls.
+    # Changing the assigned editors past the 'Unassigned' workflow stage
+    # is probably unusual but in theory possible.
+    try:
+        call_record = RQCCall.objects.get(article=article)
+        return call_record.editor_assignments
+    except RQCCall.DoesNotExist:
+        pass
+
     edassgmt_set = []
 
     # RQC requires that the list of editor assignments is no longer than 20 entries.
