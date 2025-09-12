@@ -2,19 +2,21 @@
 © Julius Harms, Freie Universität Berlin 2025
 """
 from django.db import transaction
+from django.db.models import Q
 from django.utils.timezone import now
-
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from utils.logger import get_logger
 
-from plugins.rqc_adapter.rqc_calls import call_mhs_submission, fetch_post_data
+from utils.logger import get_logger
 from security import decorators
 from security.decorators import production_manager_roles
 from submission import models as submission_models
 
-from plugins.rqc_adapter import forms, plugin_settings
-from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall, RQCJournalAPICredentials
+from plugins.rqc_adapter import forms
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall, RQCJournalAPICredentials, \
+    RQCReviewerOptingDecisionForReviewAssignment, RQCCall
+from plugins.rqc_adapter.rqc_calls import call_mhs_submission
+from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 
 logger = get_logger(__name__)
 

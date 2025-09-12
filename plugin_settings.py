@@ -1,6 +1,7 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
 """
+from plugins.rqc_adapter.events import create_review_assignment_opting_decision, implicit_call_mhs_submission
 from plugins.rqc_adapter.models import RQCJournalSalt
 from plugins.rqc_adapter.utils import generate_random_salt
 from utils import plugins
@@ -65,13 +66,12 @@ def hook_registry():
 
 # TODO test out what happens if you request revisions on an article
 def register_for_events():
-    from plugins.rqc_adapter.rqc_calls import implicit_call_mhs_submission
     # The RQC API requires an implicit call when the editorial decision is changed
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_ACCEPTED,
         implicit_call_mhs_submission,
     )
-    # todo -> set editorial decision to ""?
+    # todo -> test set editorial decision to ""?
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_DECLINED,
         implicit_call_mhs_submission,

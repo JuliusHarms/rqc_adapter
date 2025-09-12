@@ -6,17 +6,15 @@ import json
 import requests
 from requests import RequestException
 
-from plugins.rqc_adapter.models import RQCJournalAPICredentials
-from plugins.rqc_adapter.utils import convert_date_to_rqc_format
 from utils.logger import get_logger
 from utils.models import Version
 
+from plugins.rqc_adapter.models import RQCCall
+from plugins.rqc_adapter.utils import convert_date_to_rqc_format
 from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
 from plugins.rqc_adapter.config import VERSION
-from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 
 logger = get_logger(__name__)
-
 
 def call_mhs_apikeycheck(journal_id: int, api_key: str) -> dict:
     """

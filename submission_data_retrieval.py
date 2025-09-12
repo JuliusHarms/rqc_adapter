@@ -2,11 +2,11 @@
 © Julius Harms, Freie Universität Berlin 2025
 
 This file contains the fetch_post_data function that handles the task of retrieving the data that
-is sent to RQC in calls to the mhs_submission endpoint.
+is sent to RQC in calls to the mhs_submission API endpoint.
 """
 
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCReviewerOptingDecisionForReviewAssignment, \
-     RQCJournalSalt
+    RQCJournalSalt, RQCCall
 from plugins.rqc_adapter.utils import convert_review_decision_to_rqc_format, create_pseudo_address, encode_file_as_b64, \
     get_editorial_decision, generate_random_salt, convert_date_to_rqc_format
 
@@ -213,7 +213,7 @@ def get_reviewer_info(reviewer, reviewer_has_opted_in, journal):
         }
     return reviewer_data
 
-# As of API version 2023-09-06, RQC does not support file attachments
+# As of API version 2025-08-20, RQC does not support file attachments
 # TODO: Remote files might not work with this code
 def get_attachment(article, review_file):
     """ Gets the filename of the attachment and encodes its data. Attachments don't work yet on the side of RQC so in practice this should only be called with review_file=None

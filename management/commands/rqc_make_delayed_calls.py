@@ -2,7 +2,6 @@
 © Julius Harms, Freie Universität Berlin 2025
 """
 
-import os
 from datetime import timedelta
 from time import sleep
 
@@ -10,7 +9,6 @@ from django.utils.timezone import now
 from django.core.management.base import BaseCommand
 
 from plugins.rqc_adapter.models import RQCDelayedCall
-from plugins.rqc_adapter.plugin_settings import get_journal_id, get_journal_api_key
 from plugins.rqc_adapter.rqc_calls import fetch_post_data, call_mhs_submission
 
 try:
