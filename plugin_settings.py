@@ -84,3 +84,7 @@ def register_for_events():
         Events.ON_REVISIONS_REQUESTED,
         implicit_call_mhs_submission,
     )
+    events_logic.Events.register_for_event(
+        Events.ON_REVIEWER_ACCEPTED,
+        create_review_assignment_opting_decision
+    )
