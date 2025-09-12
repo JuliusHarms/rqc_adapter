@@ -200,6 +200,17 @@ def set_reviewer_opting_status(request):
                 messages.info(request, 'Thank you for choosing to participate in RQC!')
             else:
                 messages.info(request, 'Thank you for your response. Your preference has been recorded.')
+
+            # Check if the Review Assignment is frozen (see also the is_frozen property
+            # of RQCReviewerOptingDecisionForReviewAssignment
+            # If the Review Assignment is not frozen we update the opting status to reflect
+            # the selected value.
+            RQCReviewerOptingDecisionForReviewAssignment.objects.exclude(
+                Q(review_assignment__article__in = RQCCall.objects.values_list('article', flat=True))
+                | Q(review_assignment__is_complete = True)
+                | Q(review_assignment__date_declined__isnull = False)
+            ).update(opting_status=opting_status)
+
             return redirect('core_dashboard')
     else:
         return redirect('core_dashboard')
