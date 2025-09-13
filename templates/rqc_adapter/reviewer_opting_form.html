@@ -2,7 +2,7 @@
 © Julius Harms, Freie Universität Berlin 2025
 -->
 
-<div class="title-area">
+<div class="title-area" id="rqc_opting_form_title">
    <h2>Take part in Review Quality Collector?</h2>
 </div>
 <div class="content">
@@ -28,26 +28,67 @@
             <strong>The agreement covers all my reviews for the present journal in the present calendar year; a separate one is needed for any other journal and any other year.</strong>
         </p>
     </div>
+    <div id="help_label" class="callout warning" style="display: none; margin: 10px 0; animation: fadeIn 0.3s;">
+        <p><strong>You need to select an option below before you can submit the review form.</strong></p>
+    </div>
     <form method="POST" id="rqc_opting_form" action= "{% url 'rqc_adapter_set_reviewer_opting_status' %}">
         {% csrf_token %}
+        <input type="hidden" name="assignment_id" value="{{ request.assignment_id }}">
         {{ form.status_selection_field }}
         {{ form.status_selection_field.errors }}
          <button type="submit" class="button success">Submit Decision</button>
     </form>
 </div>
 <script>
+    // When a user tries to submit a review form without first registering an RQC opting decision
+    // the submission is blocked and the window is scrolled back to the RQC opting decision form.
+    // Help text is displayed to inform the user.
     document.addEventListener('DOMContentLoaded', function() {
         const rqc_opting_form = document.querySelector("#rqc_opting_form");
+        const rqc_opting_form_title = document.querySelector("#rqc_opting_form_title");
+        const help_label = document.querySelector("#help_label");
+        const rqc_opting_form_pos = rqc_opting_form_title.offsetTop;
         const forms = document.querySelectorAll('form[method="POST"][enctype="multipart/form-data"]');
-        const review_form = forms[1];
         let has_submitted = false;
+
         rqc_opting_form.onsubmit = function(e) {
             has_submitted = true;
+            help_label.style.display = 'none';
         }
-        review_form.onsubmit = function(e) {
-            if (!has_submitted) {
-                e.preventDefault();
-                // jump to rqc from and give info text
+
+        for (let i = 0; i < forms.length; i++) {
+            const form = forms[i];
+            if (form === rqc_opting_form) {
+                continue;
+            }
+
+            form.onsubmit = function(e) {
+                if (!has_submitted) {
+                    e.preventDefault();
+
+                    rqc_opting_form.classList.add('rqc-highlighted');
+
+                    help_label.style.display = 'block';
+                    help_label.style.animation = 'fadeIn 0.3s';
+
+                    window.scrollTo({
+                        top: rqc_opting_form_pos - 20,
+                        behavior: 'smooth'
+                    });
+
+                    setTimeout(() => {
+                        if (help_label.style.display === 'block') {
+                            help_label.style.animation = 'fadeOut 0.3s';
+                            setTimeout(() => {
+                                help_label.style.display = 'none';
+                            }, 300);
+                        }
+                    }, 8000);
+
+                    setTimeout(() => {
+                        rqc_opting_form.classList.remove('rqc-highlighted');
+                    }, 3000);
+                }
             }
         }
     });
