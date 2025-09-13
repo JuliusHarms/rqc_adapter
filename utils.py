@@ -112,12 +112,18 @@ def has_opted_in_or_out(user, journal):
     except RQCReviewerOptingDecision.DoesNotExist:
         return False
 
+def utc_now():
+    """
+    Returns the current UTC datetime as an aware datetime object.
+    """
+    return datetime.now(timezone.utc)
+
 def convert_date_to_rqc_format(date: datetime | None = None) -> str:
     """
     :param date: datetime Date to convert to RQC format.
     :return: Current time in UTC in RQC format.
     """
     if date is None:
-        return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        return utc_now().strftime('%Y-%m-%dT%H:%M:%SZ')
     else:
         return date.strftime('%Y-%m-%dT%H:%M:%SZ')

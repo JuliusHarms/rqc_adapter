@@ -1,12 +1,15 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
 """
+from datetime import datetime, timezone
+
 from django.db import transaction
 from django.db.models import Q
 from django.utils.timezone import now
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
+from plugins.rqc_adapter.utils import utc_now
 from utils.logger import get_logger
 from security import decorators
 from security.decorators import production_manager_roles
