@@ -1,7 +1,6 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
 """
-
 from datetime import timezone, datetime
 
 from django.db import models
@@ -20,7 +19,7 @@ class RQCReviewerOptingDecision(models.Model):
 
     opting_status = models.IntegerField(choices=OptingChoices.choices, null=False, blank=False, default=OptingChoices.UNDEFINED)
     opting_date = models.DateTimeField(auto_now_add=True, null=False, blank=False)
-    reviewer = models.OneToOneField(Account, null=False, blank=False, on_delete=models.CASCADE)
+    reviewer = models.ForeignKey(Account, null=False, blank=False, on_delete=models.CASCADE)
     journal = models.ForeignKey(Journal, null=False, blank=False, on_delete=models.CASCADE)
 
     @property
@@ -51,8 +50,8 @@ class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
         return call_was_made or is_complete or was_declined
 
     class Meta:
-        verbose_name = "RQC Reviewer Opting Decision for ReviewAssignment"
-        verbose_name_plural = "RQC Reviewer Opting Decisions for ReviewAssignments"
+        verbose_name = "RQC Reviewer Opting Decision for Review Assignment"
+        verbose_name_plural = "RQC Reviewer Opting Decisions for Review Assignments"
 
 class RQCCall(models.Model):
     article = models.OneToOneField(Article, null=False, blank=False, on_delete=models.CASCADE)
