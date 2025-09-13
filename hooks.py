@@ -32,7 +32,7 @@ def render_rqc_grading_action(context):
         has_outstanding_reviews = True
     else:
         has_outstanding_reviews = False
-    string = render_to_string('rqc_adapter/grading_action.html', context={'request': request,'article': context['article'], 'has_outstanding_reviews': has_outstanding_reviews })
+    string = render_to_string('rqc_adapter/grading_action.html', context={'article': context['article'], 'has_outstanding_reviews': has_outstanding_reviews }, request=request)
     return string
 
 def render_reviewer_opting_form(context):
@@ -50,6 +50,6 @@ def render_reviewer_opting_form(context):
     has_api_credentials = RQCJournalAPICredentials.objects.filter(journal=journal).exists()
     if has_api_credentials and not has_opted_in_or_out(user, journal):
         form = forms.ReviewerOptingForm(initial={'status_selection_field': RQCReviewerOptingDecision.OptingChoices.OPT_IN})
-        return render_to_string('rqc_adapter/reviewer_opting_form.html', context={'request': request, 'form': form})
+        return render_to_string('rqc_adapter/reviewer_opting_form.html', context={'form': form}, request=request)
     else:
         return ''
