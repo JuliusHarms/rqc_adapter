@@ -198,7 +198,7 @@ def set_reviewer_opting_status(request):
         if form.is_valid():
             opting_status = form.cleaned_data['status_selection_field']
             user = request.user
-            RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, journal= request.journal ,opting_status=opting_status)
+            RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, journal= request.journal, defaults={'opting_status': opting_status, 'opting_date': utc_now()})
             if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
                 messages.info(request, 'Thank you for choosing to participate in RQC!')
             else:

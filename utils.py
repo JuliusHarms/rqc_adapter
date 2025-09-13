@@ -7,7 +7,8 @@ import hashlib
 import os
 import secrets
 import string
-from datetime import timezone, datetime
+
+from datetime import datetime, timezone
 
 from django.conf import settings
 
@@ -102,7 +103,7 @@ def has_opted_in_or_out(user, journal):
     :return: Boolean
     """
     try:
-        opting_decision = RQCReviewerOptingDecision.objects.filter(reviewer=user, journal=journal).order_by('opting_date').first()
+        opting_decision = RQCReviewerOptingDecision.objects.filter(reviewer=user, journal=journal, opting_date__year = utc_now().year).first()
         if opting_decision is not None and opting_decision.is_valid:
             opting_status = opting_decision.opting_status
             if opting_status is not None and (opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN or opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_OUT):
