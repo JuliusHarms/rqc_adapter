@@ -33,7 +33,8 @@
     </div>
     <form method="POST" id="rqc_opting_form" action= "{% url 'rqc_adapter_set_reviewer_opting_status' %}">
         {% csrf_token %}
-        <input type="hidden" name="assignment_id" value="{{ request.assignment_id }}">
+        <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+        <input type="hidden" name="access_code" value="{{ access_code }}">
         {{ form.status_selection_field }}
         {{ form.status_selection_field.errors }}
          <button type="submit" class="button success">Submit Decision</button>

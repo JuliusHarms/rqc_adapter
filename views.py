@@ -10,6 +10,8 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
 from plugins.rqc_adapter.utils import utc_now
+from review import logic
+from review.models import ReviewAssignment
 from utils.logger import get_logger
 from security import decorators
 from security.decorators import production_manager_roles
@@ -86,15 +88,12 @@ def log_settings_error(journal_name, user_id, error_msg):
 
 
 #TODO maybe save the data so for implicit calls it is not regenerated (except decision + additional reviews)
-#TODO check if RQC size limits are respected
 #All one-line strings must be no longer than 2000 characters.
 #All multi-line strings (the review texts) must be no longer than 200000 characters.
 #Author lists must be no longer than 200 entries.
 #Other lists (reviews, editor assignments) must be no longer than 20 entries.
 #Attachments cannot be larger than 64 MB each.
-# TODO what is a production user + add decorators to the other functions if needed
 # TODO remove request as an argument
-# TODO logic to move the article to the next stage?
 # TODO check if user is editor or section editor
 @decorators.has_journal
 @decorators.editor_user_required_and_can_see_pii
@@ -205,15 +204,47 @@ def set_reviewer_opting_status(request):
                 messages.info(request, 'Thank you for your response. Your preference has been recorded.')
 
             # Check if the Review Assignment is frozen (see also the is_frozen property
-            # of RQCReviewerOptingDecisionForReviewAssignment
+            # of RQCReviewerOptingDecisionForReviewAssignment)
+            # Not Frozen means data was not yet received by RQC
+            # and the assignment is ongoing meaning accepted but not complete and not declined.
             # If the Review Assignment is not frozen we update the opting status to reflect
             # the selected value.
             RQCReviewerOptingDecisionForReviewAssignment.objects.exclude(
                 Q(review_assignment__article__in = RQCCall.objects.values_list('article', flat=True))
                 | Q(review_assignment__is_complete = True)
                 | Q(review_assignment__date_declined__isnull = False)
+                | Q(review_assignment__date_accepted__isnull = False)
             ).update(opting_status=opting_status)
 
-            return redirect('core_dashboard')
+            assignment_id = request.POST.get('assignment_id')
+
+            # Logic checks request.GET for the access code.
+            # If the access code is not available that way we can access the code
+            # via a hidden input field in the form.
+            access_code = logic.get_access_code(request)
+            if access_code is None:
+                access_code = request.POST.get('access_code')
+
+            try:
+                if access_code:
+                    assignment = ReviewAssignment.objects.get(
+                        Q(pk=assignment_id)
+                        & Q(is_complete=False)
+                        & Q(access_code=access_code)
+                        & Q(article__stage=submission_models.STAGE_UNDER_REVIEW)
+                    )
+                else:
+                    assignment = ReviewAssignment.objects.get(
+                        Q(pk=assignment_id)
+                        & Q(is_complete=False)
+                        & Q(reviewer=request.user)
+                        & Q(article__stage=submission_models.STAGE_UNDER_REVIEW)
+                        )
+
+                return redirect(
+                    logic.generate_access_code_url("do_review", assignment, access_code)
+                )
+            except ReviewAssignment.DoesNotExist:
+                    return redirect('core_dashboard')
     else:
         return redirect('core_dashboard')

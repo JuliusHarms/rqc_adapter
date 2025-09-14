@@ -7,6 +7,7 @@ if that hook is triggered.
 
 from django.template.loader import render_to_string
 
+from review import logic
 from review.models import ReviewAssignment
 
 from plugins.rqc_adapter import forms
@@ -43,13 +44,26 @@ def render_reviewer_opting_form(context):
     request = context['request']
     journal = request.journal
     user = request.user
+
+    assignment = context.get('assignment')
+    if not assignment:
+        return ''
+
+    access_code = context.get('access_code')
+    if not access_code:
+        access_code = logic.get_access_code(request)
     # Only render the opting form if the journal has valid credentials and user has not made
     # the decision to opt in or out.
     # Validity of the credentials is checked upon entering the settings (not here).
     # Additional validation via another API call is too costly.
     has_api_credentials = RQCJournalAPICredentials.objects.filter(journal=journal).exists()
     if has_api_credentials and not has_opted_in_or_out(user, journal):
-        form = forms.ReviewerOptingForm(initial={'status_selection_field': RQCReviewerOptingDecision.OptingChoices.OPT_IN})
-        return render_to_string('rqc_adapter/reviewer_opting_form.html', context={'form': form}, request=request)
+        form = forms.ReviewerOptingForm(initial=
+                                        {'status_selection_field': RQCReviewerOptingDecision.OptingChoices.OPT_IN})
+        return render_to_string('rqc_adapter/reviewer_opting_form.html',
+                                context={'form': form,
+                                         'assignment': assignment,
+                                         'access_code': access_code},
+                                request=request)
     else:
         return ''
