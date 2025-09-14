@@ -144,22 +144,6 @@ def submit_article_for_grading(request, article_id):
         else:
             return redirect(referer)
 
-# Does an rqc request contain personally identifiable information?
-# TODO Check for conflict of interest?
-@decorators.has_journal
-@decorators.editor_user_required_and_can_see_pii # Checks if the user is an editor or section editor assigned to the article #TODO dos this work?
-def rqc_grade_article_reviews(request, article_id):
-    article = get_object_or_404(
-        submission_models.Article,
-        pk=article_id,
-        journal=request.journal,
-    )
-    template = 'rqc_adapter/rqc_grade_article_reviews.html'
-    context = {
-        'article': article,
-    }
-    return render(request, template, context)
-
 # TODO should a user be able to manually enter the url and change opting status?
 # TODO check user login?
 # TODO user should be able to get here manually

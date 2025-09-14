@@ -3,15 +3,27 @@
 -->
 
 <li>
-    <a href="{% url 'rqc_adapter_rqc_grade_article_reviews' article.pk %}" class="expanded" id="rqc_grade_reviews"><span class="fa fa-star"></span> RQC-Grade the Reviews </a>
+    <a data-open="grade_reviews_with_rqc"  class="expanded" id="rqc_grade_reviews"><span class="fa fa-star"></span> RQC-Grade the Reviews </a>
 </li>
-<script>
-    document.getElementById("rqc_grade_reviews").addEventListener("click", function (event) {
-        console.log("clicked");
-        event.preventDefault();
-        let userConfirm = confirm("You are about to navigate to an external website. Do you want to continue?");
-        if (userConfirm) {
-            window.open(event.target.href, '_blank');
-        }
-    })
-</script>
+
+<div class="reveal" id="grade_reviews_with_rqc" data-reveal aria-modal="true" aria-labelledby="rqc_grade_reviews_title">
+    <div class="box">
+        <div class="title-area">
+            <h2 id="rqc_grade_reviews_title">RQC-Grade the Reviews</h2>
+        </div>
+        <div class="content">
+            <p>You are about to submit this submission's review data to
+                <a href="https://reviewqualitycollector.org/" target="_blank" rel="noopener">Review Quality Collector (RQC)</a>.
+            </p>
+            <form method="POST" action="{% url 'rqc_adapter_submit_article_for_grading' article.pk %}">
+                {% csrf_token %}
+                <p>If you are assigned a role that should grade the reviews,
+                    you will be redirected to RQC to perform the grading and then directed
+                    back here.
+                </p>
+                <button type="submit" class="button success">OK</button>
+                <button class="button secondary" data-close type="button">Cancel</button>
+            </form>
+        </div>
+    </div>
+</div>
