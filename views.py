@@ -165,29 +165,6 @@ def rqc_grade_article_reviews(request, article_id):
 # TODO user should be able to get here manually
 
 # The request must provide a journal object because the opting decision in specific to the journal
-# Only reviewers should be able to opt in or out of participating in RQC
-@decorators.has_journal
-@decorators.reviewer_user_required
-def reviewer_opting_form(request):
-    template = 'rqc_adapter/reviewer_opting_form.html'
-    try:
-        opting_status = RQCReviewerOptingDecision.objects.get(reviewer=request.user, journal=request.journal)
-        if opting_status.is_valid:
-            messages.info(request,
-                          'You have already decided whether to participate or not participate in RQC for this journal and journal year.')
-            return redirect('core_dashboard')
-    except RQCReviewerOptingDecision.DoesNotExist:
-        pass
-    form = forms.ReviewerOptingForm(initial={'status_selection_field': RQCReviewerOptingDecision.OptingChoices.OPT_IN})
-    return render(request, template, {'form': form})
-#
-# TODO get user and opting submission info
-# TODO ? @login_required
-# TODO what if there is no logged in user?
-# TODO add info messages for other settings updated
-# TODO check if user is a reviewer!!!
-
-# The request must provide a journal object because the opting decision in specific to the journal
 # The user must be a reviewer since only reviewers should be able to opt in or out
 @decorators.has_journal
 @decorators.reviewer_user_required
