@@ -5,7 +5,7 @@ This file defines a basic test case that sets up data and provides utility
 methods for the other test classes.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from mock import Mock
 import os
 
@@ -13,6 +13,8 @@ from django.http import HttpRequest
 from django.test import TestCase, override_settings
 from django.contrib.contenttypes.models import ContentType
 
+import submission.models
+from plugins.rqc_adapter.models import RQCReviewerOptingDecisionForReviewAssignment, RQCReviewerOptingDecision
 from press.models import Press
 from utils.testing import helpers
 
@@ -27,6 +29,33 @@ from utils.testing import helpers
 class RQCAdapterBaseTestCase(TestCase):
 
     @classmethod
+    def create_author(cls, journal, username):
+        author = helpers.create_user(
+            username,
+            ['author'],
+            journal= journal,
+        )
+        author.is_active = True
+        author.save()
+        return author
+
+    @classmethod
+    def create_article(cls, journal, title, author, stage=submission.models.STAGE_UNDER_REVIEW):
+        article = helpers.create_article(
+            journal=journal,
+        )
+        article.title = title
+        article.authors.add(author)
+        article.stage = stage
+        article.save()
+        return article
+
+    @classmethod
+    def create_reviewer_opting_decision_for_ReviewAssignment(cls, review_assignment, opting_status=RQCReviewerOptingDecision.OptingChoices.OPT_IN):
+        opting_for_review_assignment = RQCReviewerOptingDecisionForReviewAssignment.objects.create(review_assignment=review_assignment, opting_status=opting_status)
+        return opting_for_review_assignment
+
+    @classmethod
     def setUpTestData(cls):
         """
         Setup the test environment.
@@ -36,7 +65,6 @@ class RQCAdapterBaseTestCase(TestCase):
             "reviewer",
             "editor",
         ]
-
         cls.press = helpers.create_press()
         cls.journal_one, cls.journal_two = helpers.create_journals()
         helpers.create_roles(roles_to_setup)
@@ -44,6 +72,8 @@ class RQCAdapterBaseTestCase(TestCase):
         cls.editor = helpers.create_editor(cls.journal_one)
         cls.article_owner = helpers.create_regular_user()
         cls.bad_user = helpers.create_second_user(cls.journal_one)
+
+        # Set-Up author
         cls.author = helpers.create_user(
             'author@rqc.initiative',
             ['author'],
@@ -54,9 +84,30 @@ class RQCAdapterBaseTestCase(TestCase):
         cls.active_article = helpers.create_article(
             journal=cls.journal_one,
         )
+
+        # Create Article
         cls.active_article.title = 'Active Article'
-        cls.active_article.save()
         cls.active_article.authors.add(cls.author)
+        cls.active_article.stage = submission.models.STAGE_UNDER_REVIEW
+        cls.active_article.save()
+
+        # Create Reviewer 1
+        cls.reviewer_one = helpers.create_peer_reviewer(cls.journal_one)
+        cls.reviewer_one.is_active = True
+        cls.reviewer_one.save()
+
+        # Create Reviewer 2
+        cls.reviewer_two = helpers.create_peer_reviewer(cls.journal_one)
+        cls.reviewer_two.is_active = True
+        cls.reviewer_two.save()
+
+        # Create Review Assignment
+        cls.review_assignment = helpers.create_review_assignment(
+            journal=cls.journal_one,
+            article=cls.active_article,
+            reviewer=cls.reviewer_one,
+            editor= cls.editor,
+            due_date=datetime.now(timezone.utc) + timedelta(weeks=2))
 
         # Set-Up API credentials for live calls:
         cls.rqc_api_key = os.environ.get('RQC_API_KEY', None)
@@ -69,6 +120,7 @@ class RQCAdapterBaseTestCase(TestCase):
     @staticmethod
     def get_method(field):
         return None
+
     @staticmethod
     def prepare_request_with_user(user, journal, press=None):
         """
@@ -100,6 +152,9 @@ class RQCAdapterBaseTestCase(TestCase):
 
     def login_editor(self):
         self.client.force_login(self.editor)
+
+    def login_reviewer(self):
+        self.client.force_login(self.reviewer_one)
 
 
 data = {

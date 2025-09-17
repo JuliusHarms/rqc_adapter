@@ -87,14 +87,11 @@ def log_settings_error(journal_name, user_id, error_msg):
     logger.error(f'Failed to save RQC settings for journal {journal_name} by user: {user_id}. Details: {error_msg}')
 
 
-#TODO maybe save the data so for implicit calls it is not regenerated (except decision + additional reviews)
 #All one-line strings must be no longer than 2000 characters.
 #All multi-line strings (the review texts) must be no longer than 200000 characters.
 #Author lists must be no longer than 200 entries.
 #Other lists (reviews, editor assignments) must be no longer than 20 entries.
 #Attachments cannot be larger than 64 MB each.
-# TODO remove request as an argument
-# TODO check if user is editor or section editor
 @decorators.has_journal
 @decorators.editor_user_required_and_can_see_pii
 def submit_article_for_grading(request, article_id):
@@ -147,7 +144,6 @@ def submit_article_for_grading(request, article_id):
 # TODO should a user be able to manually enter the url and change opting status?
 # TODO check user login?
 # TODO user should be able to get here manually
-
 # The request must provide a journal object because the opting decision in specific to the journal
 # The user must be a reviewer since only reviewers should be able to opt in or out
 @decorators.has_journal

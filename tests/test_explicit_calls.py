@@ -5,12 +5,10 @@ This file contains tests for the manager template and the associated
 form uses to set the journals api credentials.
 """
 
-# Error Codes
-
 # RQC-Service Contacted
 
-# Data fetching
+# data is correctly fetched
 
-# Salt Creation
+# Salt Creation if not yet existent
 
-# Opt-In Opt-Out
+# Opt-In Opt-Out - correctly handled
