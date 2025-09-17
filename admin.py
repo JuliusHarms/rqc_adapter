@@ -9,13 +9,12 @@ from django.contrib import admin
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall, \
     RQCReviewerOptingDecisionForReviewAssignment
 
-
 class RQCReviewerOptingDecisionAdmin(admin.ModelAdmin):
     list_display = ('reviewer', 'journal', 'opting_status')
     readonly_fields = ('opting_date',)
 
 class RQCReviewerOptingDecisionForReviewAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('review_assignment', 'opting_status')
+    list_display = ('review_assignment', 'opting_status', 'sent_to_rqc')
 
 class RQCDelayedCallAdmin(admin.ModelAdmin):
     list_display = ('article', 'remaining_tries', 'last_attempt_at', 'failure_reason')

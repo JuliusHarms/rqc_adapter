@@ -45,10 +45,9 @@ class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
 
     @property
     def is_frozen(self):
-        call_was_made = RQCCall.objects.filter(article=self.review_assignment.article).exists()
         is_complete = self.review_assignment.is_complete
         was_declined = self.review_assignment.date_declined is not None
-        return call_was_made or is_complete or was_declined
+        return self.sent_to_rqc or is_complete or was_declined
 
     class Meta:
         verbose_name = "RQC Reviewer Opting Decision for Review Assignment"
