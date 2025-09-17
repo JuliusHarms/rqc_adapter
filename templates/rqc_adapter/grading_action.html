@@ -12,16 +12,30 @@
             <h2 id="rqc_grade_reviews_title">RQC-Grade the Reviews</h2>
         </div>
         <div class="content">
-            <p>You are about to submit this submission's review data to
-                <a href="https://reviewqualitycollector.org/" target="_blank" rel="noopener">Review Quality Collector (RQC)</a>.
-            </p>
+            {% if has_outstanding_reviews %}
+                <p>You are about to submit this submission's review data to
+                    <a href="https://reviewqualitycollector.org/" target="_blank" rel="noopener">Review Quality Collector (RQC)</a>.
+                </p>
+                <div class="callout warning">
+                    <p>
+                        You are about to initiate the review grading process for this submission,
+                        but not all reviews have yet arrived.
+                        <strong>Reviews arriving only after this step
+                            will likely not be included in the grading process.</strong>
+                    <p>
+                </div>
+            {% else %}
+                <p>You are about to submit this submission's review data to
+                    <a href="https://reviewqualitycollector.org/" target="_blank" rel="noopener">Review Quality Collector (RQC)</a>.
+                </p>
+            {% endif %}
             <form method="POST" action="{% url 'rqc_adapter_submit_article_for_grading' article.pk %}">
                 {% csrf_token %}
                 <p>If you are assigned a role that should grade the reviews,
                     you will be redirected to RQC to perform the grading and then directed
                     back here.
                 </p>
-                <button type="submit" class="button success">OK</button>
+                <button type="submit" class="button success">Proceed</button>
                 <button class="button secondary" data-close type="button">Cancel</button>
             </form>
         </div>
