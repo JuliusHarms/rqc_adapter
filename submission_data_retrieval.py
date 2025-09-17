@@ -4,6 +4,9 @@
 This file contains the fetch_post_data function that handles the task of retrieving the data that
 is sent to RQC in calls to the mhs_submission API endpoint.
 """
+import logging
+
+from django.db.models import Q
 
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCReviewerOptingDecisionForReviewAssignment, \
     RQCJournalSalt, RQCCall
@@ -36,7 +39,7 @@ def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = 
     # mhs_submissionpage is used by RQC to redirect the user to Janeway after grading.
     # So if interactive user is empty this should be empty as well.
     if submission_data['interactive_user']:
-        submission_data['mhs_submissionpage'] = mhs_submissionpage #TODO redirect vulnerabilities?
+        submission_data['mhs_submissionpage'] = mhs_submissionpage
     else:
         submission_data['mhs_submissionpage'] = ''
 
@@ -148,14 +151,22 @@ def get_reviews_info(article, journal):
     """
     review_set = []
     # If a review assignment was not accepted this date field will be null.
-    # Reviewers that have not accepted a review assignment are not considered for grading by RQC
-    # TODO what if the review was unaccepted!!!?
-    review_assignments = article.reviewassignment_set.filter(date_accepted__isnull = False).order_by('date_accepted') # TODO what if there is not review assignment -> no call should be possible os that guarenteed?
+    # Reviewers that have not accepted a review assignment are not considered for grading by RQC.
+
+    # If data for the submission has already been sent to RQC, and it includes a reviewer
+    # that has declined to review AFTER having accepted initially AND the data that was sent
+    # includes said reviewer the review assignment is treated as having been accepted, and
+    # not completed.
+    review_assignments = article.reviewassignment_set.filter(
+        Q(date_accepted__isnull=False) # ReviewAssignment not accepted
+        | Q(
+            date_declined__isnull=False, # Assignment was declined but only after data has been sent to RQC
+            rqcoptingdecisionforreviewassignment__sent_to_rqc=True
+        )
+    ).order_by("date_requested")
     review_num = 1
     for review_assignment in review_assignments:
         reviewer = review_assignment.reviewer
-        # TODO what if reviews are not yet completed?
-        # TODO are review assignment created if reviewers haven't accepted yet? -> then a review assignment is made anyway...
         review_assignment_answers = [ra.answer for ra in review_assignment.review_form_answers()]
         review_text = " ".join(review_assignment_answers)
         reviewer_has_opted_in = has_opted_in(reviewer, review_assignment)
@@ -163,7 +174,7 @@ def get_reviews_info(article, journal):
         review_data = {
             # Visible id is just supposed to identify the review as a sort of name.
             # An integer ordering by the acceptance date is used starting at 1 for the oldest review assignment.
-            'visible_id': str(review_num), #TODO what if the review isn't published yet??ß
+            'visible_id': str(review_num),
             'invited': convert_date_to_rqc_format(review_assignment.date_requested) if review_assignment.date_requested else None,
             'agreed': convert_date_to_rqc_format(review_assignment.date_accepted) if review_assignment.date_accepted else None,
             'expected': convert_date_to_rqc_format(review_assignment.date_due) if review_assignment.date_due else None,
@@ -178,10 +189,9 @@ def get_reviews_info(article, journal):
             # review_data['attachment_set'] = get_attachment(article, review_file=article.review_file)
             'attachment_set': []
         }
-
         review_set.append(review_data)
         review_num = review_num + 1
-    # TODO does this go against the reviews are holy principle?
+    logging.info(f"RQC Call: Number of reviews exceeded {MAX_LIST_LENGTH}. {len(review_set)-MAX_LIST_LENGTH} reviews were not included in the call. Entire review_set: {review_set}")
     return review_set[:MAX_LIST_LENGTH]
 
 def has_opted_in(reviewer, review_assignment):
