@@ -4,12 +4,13 @@
 
 import json
 import requests
+from django.db.models import Q
 from requests import RequestException
 
 from utils.logger import get_logger
 from utils.models import Version
 
-from plugins.rqc_adapter.models import RQCCall
+from plugins.rqc_adapter.models import RQCCall, RQCReviewerOptingDecisionForReviewAssignment
 from plugins.rqc_adapter.utils import convert_date_to_rqc_format
 from plugins.rqc_adapter.config import API_VERSION, API_BASE_URL, REQUEST_TIMEOUT
 from plugins.rqc_adapter.config import VERSION
@@ -83,6 +84,14 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
 
         if response.ok and use_post:
             RQCCall.objects.get_or_create(article=article, defaults = {'editor_assignments': post_data['edassgmnt_set']})
+            # The Reviews that are sent to RQC are saved in order to handle
+            # the case where a reviewer accepts a review assignment, then an RQC call is made and then
+            # the reviewer declines the review assignment. In that case according to the API description
+            # the review data has to be resent on subsequent calls despite the fact that the reviewer
+            # has since then declined the review assignment.
+            RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+                reviewassignemnt__article=article, review_assignment__date_decline__isnull=True
+            ).update(sent_to_rqc=True)
 
         if response.status_code == 200 and use_post:
             return result
