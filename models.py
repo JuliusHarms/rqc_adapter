@@ -40,7 +40,8 @@ class RQCReviewerOptingDecision(models.Model):
 # TODO check this text
 class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
     opting_status = models.IntegerField(choices=RQCReviewerOptingDecision.OptingChoices.choices, null=False, blank=False, default=RQCReviewerOptingDecision.OptingChoices.UNDEFINED)
-    review_assignment = models.ForeignKey(ReviewAssignment, null=False, blank=False, on_delete=models.CASCADE)
+    review_assignment = models.OneToOneField(ReviewAssignment, null=False, blank=False, on_delete=models.CASCADE)
+    sent_to_rqc = models.BooleanField(default=False)
 
     @property
     def is_frozen(self):
@@ -56,6 +57,10 @@ class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
 class RQCCall(models.Model):
     article = models.OneToOneField(Article, null=False, blank=False, on_delete=models.CASCADE)
     editor_assignments = models.JSONField(null=False, blank=False)
+
+    class Meta:
+        verbose_name = "RQC Call"
+        verbose_name_plural = "RQC Calls"
 
 class RQCDelayedCall(models.Model):
     remaining_tries = models.IntegerField(default=10, null=False, blank=False)
