@@ -15,8 +15,8 @@ logger = get_logger(__name__)
 # Called when an article editorial decision changes
 def implicit_call_mhs_submission(**kwargs) -> dict | None:
     """
-    TODO what if values don't exist yet....
-    TODO unnecessary database calls... maybe put all the data collection in a separate function
+    This function makes a call to the MHS submission API. Triggers when the editorial decision
+    of a submission changes.
     """
     article = kwargs['article']
     request = kwargs['request']
@@ -40,7 +40,7 @@ def implicit_call_mhs_submission(**kwargs) -> dict | None:
 
     journal_id = credentials.journal_id
     api_key = credentials.api_key
-    submission_id = article.pk #TODO change sub id to something else?
+    submission_id = article.pk
     post_data = fetch_post_data(user=request.user, article=article, journal= request.journal)
     return call_mhs_submission(journal_id=journal_id,
                                api_key=api_key,
@@ -69,6 +69,7 @@ def create_review_assignment_opting_decision(**kwargs):
         decision = RQCReviewerOptingDecision.objects.filter(reviewer=review_assignment.reviewer,
                                                              journal=journal,
                                                              opting_date__year=utc_now().year).first()
+        # Create with default sent_to_rqc = False
         if decision is not None:
             opting_status = decision.opting_status
             RQCReviewerOptingDecision.objects.get_or_create(review_assignment=review_assignment,

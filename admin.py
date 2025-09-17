@@ -1,5 +1,7 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
+
+This file defines the fields shown in the Django admin interface.
 """
 
 from django.contrib import admin
@@ -11,7 +13,6 @@ from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall
 class RQCReviewerOptingDecisionAdmin(admin.ModelAdmin):
     list_display = ('reviewer', 'journal', 'opting_status')
     readonly_fields = ('opting_date',)
-
 
 class RQCReviewerOptingDecisionForReviewAssignmentAdmin(admin.ModelAdmin):
     list_display = ('review_assignment', 'opting_status')
