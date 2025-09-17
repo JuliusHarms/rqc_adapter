@@ -12,10 +12,12 @@ import os
 from django.http import HttpRequest
 from django.test import TestCase, override_settings
 from django.contrib.contenttypes.models import ContentType
-
+from core import (
+    models as core_models,
+)
 import submission.models
-from plugins.rqc_adapter.models import RQCReviewerOptingDecisionForReviewAssignment, RQCReviewerOptingDecision
-from press.models import Press
+from plugins.rqc_adapter.models import RQCReviewerOptingDecisionForReviewAssignment, RQCReviewerOptingDecision, \
+    RQCJournalAPICredentials
 from utils.testing import helpers
 
 # Django-Debug-Toolbar gets disabled to avoid it wrapping html responses with its own templates
@@ -29,9 +31,9 @@ from utils.testing import helpers
 class RQCAdapterBaseTestCase(TestCase):
 
     @classmethod
-    def create_author(cls, journal, username):
+    def create_author(cls, journal, email):
         author = helpers.create_user(
-            username,
+            email,
             ['author'],
             journal= journal,
         )
@@ -51,9 +53,23 @@ class RQCAdapterBaseTestCase(TestCase):
         return article
 
     @classmethod
-    def create_reviewer_opting_decision_for_ReviewAssignment(cls, review_assignment, opting_status=RQCReviewerOptingDecision.OptingChoices.OPT_IN):
-        opting_for_review_assignment = RQCReviewerOptingDecisionForReviewAssignment.objects.create(review_assignment=review_assignment, opting_status=opting_status)
+    def create_reviewer_opting_decision_for_ReviewAssignment(cls, review_assignment,
+                                                             opting_status=RQCReviewerOptingDecision.OptingChoices.OPT_IN):
+        opting_for_review_assignment = RQCReviewerOptingDecisionForReviewAssignment.objects.create(review_assignment=review_assignment,                                                                                              opting_status=opting_status)
         return opting_for_review_assignment
+
+    @classmethod
+    def create_journal_credentials(cls, journal, journal_id, api_key):
+        RQCJournalAPICredentials.objects.create(journal= journal,
+                                                rqc_journal_id = journal_id,
+                                                api_key= api_key)
+
+    @classmethod
+    def add_role_to_user(cls, user, role, journal):
+        resolved_role = core_models.Role.objects.get(slug=role)
+        core_models.AccountRole.objects.get_or_create(
+            user=user, role=resolved_role, journal=journal
+        )
 
     @classmethod
     def setUpTestData(cls):
@@ -94,12 +110,13 @@ class RQCAdapterBaseTestCase(TestCase):
         # Create Reviewer 1
         cls.reviewer_one = helpers.create_peer_reviewer(cls.journal_one)
         cls.reviewer_one.is_active = True
+        # Give reviewer one the 'reviewer' role in journal two
+        cls.add_role_to_user(cls.reviewer_one, 'reviewer', cls.journal_two)
         cls.reviewer_one.save()
 
-        # Create Reviewer 2
-        cls.reviewer_two = helpers.create_peer_reviewer(cls.journal_one)
-        cls.reviewer_two.is_active = True
-        cls.reviewer_two.save()
+        # Set Up Journal two
+        # Create Editor 2
+        cls.editor_two = helpers.create_editor(cls.journal_two)
 
         # Create Review Assignment
         cls.review_assignment = helpers.create_review_assignment(
@@ -108,6 +125,8 @@ class RQCAdapterBaseTestCase(TestCase):
             reviewer=cls.reviewer_one,
             editor= cls.editor,
             due_date=datetime.now(timezone.utc) + timedelta(weeks=2))
+        cls.review_assignment.date_accepted = datetime.now(timezone.utc)
+        cls.review_assignment.save()
 
         # Set-Up API credentials for live calls:
         cls.rqc_api_key = os.environ.get('RQC_API_KEY', None)
@@ -153,8 +172,11 @@ class RQCAdapterBaseTestCase(TestCase):
     def login_editor(self):
         self.client.force_login(self.editor)
 
-    def login_reviewer(self):
-        self.client.force_login(self.reviewer_one)
+    def login_reviewer(self, reviewer=None):
+        if reviewer is None:
+            self.client.force_login(self.reviewer_one)
+        else:
+            self.client.force_login(reviewer)
 
 
 data = {

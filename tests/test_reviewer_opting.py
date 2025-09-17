@@ -1,20 +1,16 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
 """
-
-import os
 from datetime import timedelta
 from unittest.mock import patch
 
 from django.urls import reverse
 from django.utils import timezone
 
-from core.context_processors import journal
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCJournalAPICredentials, \
     RQCReviewerOptingDecisionForReviewAssignment
 from plugins.rqc_adapter.tests.base_test import RQCAdapterBaseTestCase
 from utils.testing import helpers
-
 
 class TestReviewerOpting(RQCAdapterBaseTestCase):
 
@@ -48,10 +44,46 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
             follow=follow
         )
 
-    def get_review_form(self, assignment_id=None):
-        return self.client.get(
-            reverse(self.review_form_view,
-            args=[assignment_id]))
+    def get_review_form(self, assignment_id=None, access_code=None):
+        if access_code is None:
+            return self.client.get(
+                reverse(self.review_form_view,
+                args=[assignment_id]))
+        else:
+            return self.client.get(
+                reverse(self.review_form_view,
+                args=[assignment_id]), data={'access_code': access_code})
+
+    def create_opting_status(self, journal_field, decision, opting_date=None):
+        if opting_date:
+            return RQCReviewerOptingDecision.objects.create(reviewer=self.reviewer_one,
+                                                    journal=journal_field,
+                                                    opting_status=decision,
+                                                    opting_date=opting_date)
+        else:
+            # Created with current time as default
+            return RQCReviewerOptingDecision.objects.create(reviewer= self.reviewer_one,
+                                                     journal=journal_field,
+                                                     opting_status=decision)
+
+    def create_session(self, param_journal=None, param_reviewer=None):
+        session = self.client.session
+        if param_journal is None:
+            session['journal'] = self.journal_one.id
+        else:
+            session['journal'] = param_journal.id
+        if param_reviewer is None:
+            session['user'] = self.reviewer_one.id
+        else:
+            session['user'] = param_reviewer.id
+        session.save()
+
+    def create_session_with_reviewer(self, param_journal=None, param_reviewer=None):
+        self.login_reviewer(param_reviewer)
+        self.create_session(param_journal, param_reviewer)
+
+    def assert_opting_form_template_used(self, response):
+        self.assertTemplateUsed(response, self.opting_form_template)
 
     def assert_opting_decision_exists(self):
         self.assertTrue(
@@ -60,32 +92,16 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
                 opting_status=self.OPT_IN
             ).exists()
         )
-    def create_opting_status(self, journal_field, decision, opting_date=None):
-        if opting_date:
-            RQCReviewerOptingDecision.objects.create(reviewer=self.reviewer_one, journal=journal_field,
-                                                     opting_status=decision,
-                                                     opting_date=opting_date)
-        else:
-            # Created with current time as default
-            RQCReviewerOptingDecision.objects.create(reviewer= self.reviewer_one,
-                                                     journal=journal_field,
-                                                     opting_status=decision)
-
-    def assert_opting_form_template_used(self, response):
-        self.assertTemplateUsed(response, self.opting_form_template)
 
     def setUp(self):
         super().setUp()
-        RQCJournalAPICredentials.objects.create(journal= self.journal_one,
-                                                rqc_journal_id = 1,
-                                                api_key= 'test')
+        self.create_journal_credentials(self.journal_one, 1, 'test')
+        self.create_journal_credentials(self.journal_two, 2, 'test')
 
         self.create_session_with_reviewer()
-
         # Create second Review Assignment
         # Set-Up author
-        self.author_two = self.create_author(self.journal_one, 'author_two')
-
+        self.author_two = self.create_author(self.journal_two, 'author_two@email.com')
         # Create Article
         self.article_two = self.create_article(self.journal_two, 'Article 2', self.author_two)
 
@@ -93,8 +109,10 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
             journal=self.journal_two,
             article=self.article_two,
             reviewer=self.reviewer_one,
-            editor= self.editor,
+            editor=self.editor_two,
             due_date= timezone.now() + timedelta(weeks=2))
+
+        self.review_assignment_two.date_accepted = timezone.now()
 
         # Create third Review Assignment in journal_one
         self.article_three = self.create_article(self.journal_one, 'Article 3', self.author)
@@ -105,16 +123,10 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
             editor= self.editor,
             due_date= timezone.now() + timedelta(weeks=2)
         )
+        self.review_assignment_three.date_accepted = timezone.now()
 
-    def create_session(self):
-        session = self.client.session
-        session['journal'] = self.journal_one.id
-        session['user'] = self.reviewer_one.id
-        session.save()
-
-    def create_session_with_reviewer(self):
-        self.login_reviewer()
-        self.create_session()
+        self.review_assignment_two.save()
+        self.review_assignment_three.save()
 
     def test_opting_status_set(self):
         """Test creation of opting status when form is submitted and redirection."""
@@ -124,6 +136,70 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
         # Created Opting status
         self.assert_opting_decision_exists()
 
+    def test_opting_status_set_opt_out(self):
+        """Test creation of opting status when form is submitted and redirection."""
+        response = self.post_opting_status(form_data=self.create_opt_out_form_data())
+        # Redirect after POST
+        self.assertEqual(response.status_code, 302)
+        # Created Opting status
+        self.assertTrue(
+            RQCReviewerOptingDecision.objects.filter(
+                reviewer=self.reviewer_one,
+                opting_status=self.OPT_OUT
+            ).exists()
+        )
+
+    def test_active_review_assignments_get_status_update(self):
+        """Correctly updates RQCOptingStatusForReviewAssignment for active review assignments."""
+        self.create_reviewer_opting_decision_for_ReviewAssignment(review_assignment=self.review_assignment,
+                                                                  opting_status=self.UNDEFINED)
+
+        self.get_review_form(assignment_id=self.review_assignment.id)
+        self.post_opting_status(form_data=self.create_opt_in_form_data(
+            assignment_id=self.review_assignment.id))
+        self.assert_opting_decision_exists()
+        # Updated Opting-Decision for Review Assignment
+        self.assertTrue(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+            review_assignment=self.review_assignment,
+            opting_status=self.OPT_IN).exists())
+
+    # Declined or complete reviews or reviews that were sent to RQC
+    # do not get their opting status updated.
+    def set_status_undefined_for_review_assignment_three(self):
+        review_assignment_opting_status = self.create_reviewer_opting_decision_for_ReviewAssignment(
+            self.review_assignment_three,
+            self.UNDEFINED)
+        return review_assignment_opting_status
+
+    def assert_review_assignment_three_not_updated(self):
+        self.assertTrue(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+            review_assignment=self.review_assignment_three,
+            opting_status=self.UNDEFINED).exists())
+
+    def test_declined_review_assignments_do_not_status_update(self):
+        """Does not update RQCOptingStatusForReviewAssignment for declined review assignments."""
+        review_assignment_opting_status = self.set_status_undefined_for_review_assignment_three()
+        review_assignment_opting_status.review_assignment.date_declined = timezone.now()
+        self.post_opting_status(form_data=self.create_opt_in_form_data(assignment_id=self.review_assignment.id))
+        self.assert_review_assignment_three_not_updated()
+
+    def test_complete_review_assignments_do_not_status_update(self):
+        """Does not update RQCOptingStatusForReviewAssignment for complete review assignments."""
+        review_assignment_opting_status = self.set_status_undefined_for_review_assignment_three()
+        review_assignment_opting_status.review_assignment.is_complete = True
+        self.post_opting_status(form_data=self.create_opt_in_form_data(assignment_id=self.review_assignment.id))
+        self.assertTrue(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+            review_assignment=self.review_assignment_three,
+            opting_status=self.UNDEFINED).exists())
+
+    def test_sent_review_assignments_do_not_status_update(self):
+        """Does not update RQCOptingStatusForReviewAssignment for already sent review assignments."""
+        review_assignment_opting_status = self.set_status_undefined_for_review_assignment_three()
+        review_assignment_opting_status.sent_to_rqc = True
+        self.post_opting_status(form_data=self.create_opt_in_form_data(assignment_id=self.review_assignment.id))
+
+#Integration-Tests
+
     def test_opting_form_shown_if_no_opting_status_present(self):
         """Form is shown on the review form if no opting status is present."""
         # Open the review form
@@ -131,19 +207,36 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
         self.assertTemplateUsed(response, self.review_form_template)
         self.assert_opting_form_template_used(response)
 
-    def test_redirect_to_review_form(self, response=None):
-        """Test redirection to review form."""
-        response = self.get_review_form(assignment_id=self.review_assignment.id)
-        self.assert_opting_decision_exists()
+    def redirect_test_helper(self):
         form_data = self.create_opt_in_form_data(assignment_id=self.review_assignment.id)
-        self.post_opting_status(form_data=form_data)
-
+        response = self.post_opting_status(form_data=form_data, follow=True)
         # Created Opting status
         self.assert_opting_decision_exists()
         # Redirected to review_form with correct url
         self.assertTemplateUsed(response, self.review_form_template)
+        return response
+
+    def test_redirect_to_review_form(self):
+        """Test redirection to review form."""
+        self.get_review_form(assignment_id=self.review_assignment.id)
+        response = self.redirect_test_helper()
         final_url = response.request['PATH_INFO']
         expected_url = reverse(self.review_form_view, args=[self.review_assignment.id])
+        self.assertEqual(final_url, expected_url)
+
+    #TODO access codes...
+    def test_opting_form_redirects_with_access_code(self):
+        """Tests that redirection works when an access code is given."""
+        # Call with access code
+        response_one = self.get_review_form(assignment_id=self.review_assignment.id, access_code=self.review_assignment.access_code)
+        print(f"Request URL: {response_one.wsgi_request.get_full_path()}")
+        print(f"Request path: {response_one.wsgi_request.path}")
+        print(f"Query string: {response_one.wsgi_request.META.get('QUERY_STRING')}")
+        response = self.redirect_test_helper()
+        final_url = response.request['PATH_INFO']
+        base_url = reverse(self.review_form_view, args=[self.review_assignment.id])
+        query_params = self.review_assignment.access_code
+        expected_url = f"{base_url}?access_code={query_params}"
         self.assertEqual(final_url, expected_url)
 
     def test_opting_form_not_shown(self):
@@ -154,42 +247,38 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
 
     def test_opting_form_shown_invalid_opting_status(self):
         """Form is shown if the reviewer has an invalid (old) opting status."""
-        self.create_opting_status(self.journal_one, self.OPT_IN, opting_date=timezone.now() - timedelta(weeks=200))
+        opting_decision = self.create_opting_status(self.journal_one,
+                                                    self.OPT_IN,
+                                                    )
+        opting_decision.opting_date = timezone.now() - timedelta(weeks=200)
+        opting_decision.save()
         response = self.get_review_form(assignment_id=self.review_assignment.id)
         self.assertTemplateUsed(response, self.opting_form_template)
 
     def test_opting_form_shown_in_second_journal(self):
         """Form is shown in second journal even if reviewer already
         has a valid opting status in another journal."""
+        self.client.logout()
         # Create OPT-In status in journal one
         self.create_opting_status(self.journal_one, self.OPT_IN)
-        # Go to review assignment in journal two
-        response = self.get_review_form(assignment_id=self.review_assignment_two.id)
+        # Log-In in Journal two
+        self.create_session_with_reviewer(param_journal=self.journal_two)
+        # Go to review assignment in Journal two. It's important to explicitly use the
+        # domain of journal two.
+        response = self.client.get(
+            reverse(self.review_form_view,
+            args=[self.review_assignment_two.id]),HTTP_HOST=self.journal_two.domain)
         self.assertTemplateUsed(response, self.opting_form_template)
 
-    def test_active_review_assignments_get_status_update(self):
-        """Correctly updates RQCOptingStatusForReviewAssignment for active review assignments."""
-        self.create_reviewer_opting_decision_for_ReviewAssignment(review_assignment=self.review_assignment,
-                                                                  opting_status=self.UNDEFINED)
-        self.get_review_form(assignment_id=self.review_assignment.id)
-        self.post_opting_status(form_data=self.create_opt_in_form_data(assignment_id=self.review_assignment.id))
-        self.assertTrue(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
-            review_assignment=self.review_assignment,
-            opting_status=self.OPT_IN).exists())
-
-    def test_inactive_review_assignments_do_not_status_update(self):
-        """Does not update RQCOptingStatusForReviewAssignment for declined review assignments."""
-        review_assignment_opting_status = self.create_reviewer_opting_decision_for_ReviewAssignment(self.review_assignment_three,
-                                                                  self.UNDEFINED)
-        review_assignment_opting_status.review_assignment.date_declined = timezone.now()
-        self.post_opting_status(form_data=self.create_opt_in_form_data(assignment_id=self.review_assignment.id))
-        self.assertTrue(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
-            review_assignment=self.review_assignment_three,
-            opting_status=self.UNDEFINED).exists())
-
-    def test_opting_form_redirects_with_access_code(self):
-        """Tests that redirection works when an access code is given."""
-        pass
-
-    def test_non_reviewers_can_not_set_opting_status(self):
+    @patch('plugins.rqc_adapter.views.set_reviewer_opting_status')
+    def test_non_reviewers_can_not_set_opting_status(self,  mock_set_opting_status):
         """Tests if non-reviewers can not set opting status."""
+        self.client.logout()
+        self.client.force_login(self.bad_user)
+        self.create_session(self.journal_one, self.bad_user)
+        self.post_opting_status(form_data=self.create_opt_in_form_data())
+        # The review_user_required decorator should intervene and stop the post-function
+        # from being called.
+        mock_set_opting_status.assert_not_called()
+
+
