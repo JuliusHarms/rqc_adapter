@@ -1,8 +1,6 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
 """
-from datetime import datetime, timezone
-
 from django.db import transaction
 from django.db.models import Q
 from django.utils.timezone import now
@@ -19,7 +17,7 @@ from submission import models as submission_models
 
 from plugins.rqc_adapter import forms
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall, RQCJournalAPICredentials, \
-    RQCReviewerOptingDecisionForReviewAssignment, RQCCall
+    RQCReviewerOptingDecisionForReviewAssignment
 from plugins.rqc_adapter.rqc_calls import call_mhs_submission
 from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 
@@ -160,21 +158,7 @@ def set_reviewer_opting_status(request):
             else:
                 messages.info(request, 'Thank you for your response. Your preference has been recorded.')
 
-            # Check if the Review Assignment is frozen (see also the is_frozen property
-            # of RQCReviewerOptingDecisionForReviewAssignment)
-            # Not Frozen means data was not yet received by RQC
-            # and the assignment is ongoing meaning accepted but not complete and not declined.
-            # If the Review Assignment is not frozen we update the opting status to reflect
-            # the selected value.
-            RQCReviewerOptingDecisionForReviewAssignment.objects.exclude(
-                Q(sent_to_rqc=True)
-                | Q(review_assignment__is_complete = True)
-                | Q(review_assignment__date_declined__isnull = False)
-                | Q(review_assignment__date_accepted__isnull = False)
-            ).update(opting_status=opting_status)
-
             assignment_id = request.POST.get('assignment_id')
-
             # Logic checks request.GET for the access code.
             # If the access code is not available that way we can access the code
             # via a hidden input field in the form.
@@ -197,6 +181,20 @@ def set_reviewer_opting_status(request):
                         & Q(reviewer=request.user)
                         & Q(article__stage=submission_models.STAGE_UNDER_REVIEW)
                         )
+
+                # Check if the Review Assignment is frozen (see also the is_frozen property
+                # of RQCReviewerOptingDecisionForReviewAssignment)
+                # Not Frozen means data was not yet received by RQC
+                # and the assignment is ongoing meaning accepted but not complete and not declined.
+                # If the Review Assignment is not frozen we update the opting status to reflect
+                # the selected value.
+                RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+                    review_assignment=assignment,
+                    sent_to_rqc=False,
+                    review_assignment__is_complete=False,
+                    review_assignment__date_declined__isnull=True,
+                    review_assignment__date_accepted__isnull=False
+                ).update(opting_status=opting_status)
 
                 return redirect(
                     logic.generate_access_code_url("do_review", assignment, access_code)
