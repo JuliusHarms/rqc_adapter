@@ -167,7 +167,7 @@ def set_reviewer_opting_status(request):
             # If the Review Assignment is not frozen we update the opting status to reflect
             # the selected value.
             RQCReviewerOptingDecisionForReviewAssignment.objects.exclude(
-                Q(review_assignment__article__in = RQCCall.objects.values_list('article', flat=True))
+                Q(sent_to_rqc=True)
                 | Q(review_assignment__is_complete = True)
                 | Q(review_assignment__date_declined__isnull = False)
                 | Q(review_assignment__date_accepted__isnull = False)
