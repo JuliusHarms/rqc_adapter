@@ -198,12 +198,11 @@ def get_reviews_info(article, journal):
 
 def has_opted_in(review_assignment):
     """ Determines if reviewer has opted into RQC
-    :param reviewer: Reviewer object
     :param review_assignment: Review Assignment object
     :return: True if reviewer has opted in and False otherwise
     """
     try:
-        opting_status = reviewer.rqcrevieweroptingdecisionforreviewassignment_set.filter(review_assignment = review_assignment).first().opting_status
+        opting_status = RQCReviewerOptingDecisionForReviewAssignment.objects.filter(review_assignment = review_assignment).first().opting_status
     except (AttributeError, RQCReviewerOptingDecisionForReviewAssignment.DoesNotExist):
         opting_status = None
     if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
