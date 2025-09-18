@@ -196,7 +196,7 @@ def get_reviews_info(article, journal):
     logging.info(f"RQC Call: Number of reviews exceeded {MAX_LIST_LENGTH}. {len(review_set)-MAX_LIST_LENGTH} reviews were not included in the call. Entire review_set: {review_set}")
     return review_set[:MAX_LIST_LENGTH]
 
-def has_opted_in(reviewer, review_assignment):
+def has_opted_in(review_assignment):
     """ Determines if reviewer has opted into RQC
     :param reviewer: Reviewer object
     :param review_assignment: Review Assignment object
