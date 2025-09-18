@@ -75,14 +75,16 @@ def get_authors_info(article):
     # should be transmitted. In janeway there can only be one correspondence author
     # so the author_set will only contain one member.
     author = article.correspondence_author
-    author_order = article.articleauthororder_set.filter(author=author).first()
+    author_order = article.frozenauthor_set.filter(author=author).first()
     author_set = []
     author_info = {
         'email': author.email[:MAX_SINGLE_LINE_STRING_LENGTH],
         'firstname': author.first_name[:MAX_SINGLE_LINE_STRING_LENGTH] if author.first_name else '',
         'lastname': author.last_name[:MAX_SINGLE_LINE_STRING_LENGTH] if author.last_name else '',
         'orcid_id': author.orcid[:MAX_SINGLE_LINE_STRING_LENGTH] if author.orcid else None,
-        'order_number': author_order.order+1 # Add 1 because RQC author numbering starts at 1 while in Janeway counting starts at  0
+        # Add 1 because RQC author numbering starts at 1 while in Janeway counting starts at  0
+        # even though default value for order is 1.
+        'order_number': author_order.order+1
     }
     author_set.append(author_info)
     return author_set
@@ -161,7 +163,7 @@ def get_reviews_info(article, journal):
         Q(date_accepted__isnull=False) # ReviewAssignment not accepted
         | Q(
             date_declined__isnull=False, # Assignment was declined but only after data has been sent to RQC
-            rqcoptingdecisionforreviewassignment__sent_to_rqc=True
+            rqcrevieweroptingdecisionforreviewassignment__sent_to_rqc=True
         )
     ).order_by("date_requested")
     review_num = 1
