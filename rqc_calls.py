@@ -104,7 +104,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
                         result['message'] = response_data['user_message']
                     elif "error" in response_data:
                         result['message'] = response_data['error']
-                    elif not response in (200, 303):
+                    elif not response.status_code in (200, 303):
                         error_string = ""
                         if isinstance(response_data, dict):
                             errors = []
