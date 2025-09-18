@@ -19,16 +19,6 @@ has_api_credentials_env = os.getenv("RQC_API_KEY") and os.getenv("RQC_JOURNAL_ID
 
 class TestManager(RQCAdapterBaseTestCase):
 
-    def create_session(self):
-        session = self.client.session
-        session['journal'] = self.journal_one.id
-        session['user'] = self.editor.id
-        session.save()
-
-    def create_session_with_editor(self):
-        self.login_editor()
-        self.create_session()
-
     def create_mock_post_request(self, journal_id, api_key):
         request = self.prepare_request_with_user(self.editor, self.journal_one, self.press)
         post_data = QueryDict(mutable=True)

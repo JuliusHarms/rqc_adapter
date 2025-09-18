@@ -29,7 +29,6 @@ from utils.testing import helpers
     }
 )
 class RQCAdapterBaseTestCase(TestCase):
-
     @classmethod
     def create_author(cls, journal, email):
         author = helpers.create_user(
@@ -71,6 +70,25 @@ class RQCAdapterBaseTestCase(TestCase):
             user=user, role=resolved_role, journal=journal
         )
 
+    def login_editor(self):
+        self.client.force_login(self.editor)
+
+    def login_reviewer(self, reviewer=None):
+        if reviewer is None:
+            self.client.force_login(self.reviewer_one)
+        else:
+            self.client.force_login(reviewer)
+
+    def create_session(self):
+        session = self.client.session
+        session['journal'] = self.journal_one.id
+        session['user'] = self.editor.id
+        session.save()
+
+    def create_session_with_editor(self):
+        self.login_editor()
+        self.create_session()
+
     @classmethod
     def setUpTestData(cls):
         """
@@ -86,25 +104,20 @@ class RQCAdapterBaseTestCase(TestCase):
         helpers.create_roles(roles_to_setup)
 
         cls.editor = helpers.create_editor(cls.journal_one)
-        cls.article_owner = helpers.create_regular_user()
         cls.bad_user = helpers.create_second_user(cls.journal_one)
 
         # Set-Up author
-        cls.author = helpers.create_user(
-            'author@rqc.initiative',
-            ['author'],
-            journal=cls.journal_one,
-        )
-        cls.author.is_active = True
-        cls.author.save()
-        cls.active_article = helpers.create_article(
-            journal=cls.journal_one,
-        )
+        cls.author = helpers.create_author(cls.journal_one)
 
         # Create Article
-        cls.active_article.title = 'Active Article'
+        cls.active_article = helpers.create_article(
+            journal=cls.journal_one,
+            title = 'Active Article',
+            stage = submission.models.STAGE_UNDER_REVIEW,
+            date_submitted = datetime.now(timezone.utc),
+            correspondence_author = cls.author,
+        )
         cls.active_article.authors.add(cls.author)
-        cls.active_article.stage = submission.models.STAGE_UNDER_REVIEW
         cls.active_article.save()
 
         # Create Reviewer 1
@@ -165,101 +178,4 @@ class RQCAdapterBaseTestCase(TestCase):
 
         request.site_type = ContentType.objects.get_for_model(journal)
         request.site = press or journal
-        # if model:
-        #    request.content_type = ContentType.objects.get_for_model(model)
         return request
-
-    def login_editor(self):
-        self.client.force_login(self.editor)
-
-    def login_reviewer(self, reviewer=None):
-        if reviewer is None:
-            self.client.force_login(self.reviewer_one)
-        else:
-            self.client.force_login(reviewer)
-
-
-data = {
-    "interactive_user": "test@fu-berlin.de",
-    "mhs_submissionpage": "https://mymhs.example.com/journal17/user29?submission=submission31",
-    "title": "Rather Altogether Modestly Long-ish Submission Title 21",
-    "external_uid": "5",
-    "visible_uid": "5",
-    "submitted": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-    "author_set": [
-        {
-            "email": "author31@sm.wh",
-            "firstname": "A.N.",
-            "lastname": "Author",
-            "orcid_id": "0000-0001-5592-0005",
-            "order_number": 1
-        },
-        {
-            "email": "other_author@sm.wh",
-            "firstname": "Brubobolob",
-            "lastname": "Authoress",
-            "orcid_id": "0000-0001-5592-0006",
-            "order_number": 3
-        }
-    ],
-    "edassgmt_set": [
-        {
-            "email": "editor1@sm.wh",
-            "firstname": "Keen",
-            "lastname": "Editorus",
-            "orcid_id": "0000-0001-5592-0003",
-            "level": 1
-        },
-        {
-            "email": "editor2@sm.wh",
-            "firstname": "Keener",
-            "lastname": "Editora",
-            "orcid_id": "0000-0001-5592-0004",
-            "level": 3
-        },
-        {
-            "email": "editor3@sm.wh",
-            "firstname": "Kim",
-            "lastname": "Nguyen",
-            "orcid_id": "0000-0001-5592-0007",
-            "level": 3
-        }
-    ],
-    "review_set": [
-        {
-            "visible_id": "1",
-            "invited": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            "agreed": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            "expected": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            "submitted": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            "text": "This is the text of review 1.",
-            "attachment_set": [],
-            "is_html": False,
-            "suggested_decision": "MINORREVISION",
-            "reviewer": {
-                "email": "reviewer1@sm.wh",
-                "firstname": "J.",
-                "lastname": "Reviewer 1",
-                "orcid_id": "0000-0001-5592-0001"
-            }
-        },
-        {
-            "visible_id": "2",
-            "invited": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            "agreed": "",
-            "expected": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            "submitted": datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-            "text": "This is the text of review 2.\nIt is multiple lines long, some of which are themselves a bit longer (like this one, for instance; at least somewhat -- truly long would be longer, of course)\n\nLine 4, the last one.",
-            "is_html": False,
-            "suggested_decision": "ACCEPT",
-            "reviewer": {
-                "email": "reviewer2@sm.wh",
-                "firstname": "J.",
-                "lastname": "Reviewer 2",
-                "orcid_id": "0000-0001-5592-0002"
-            },
-            "attachment_set": []
-        }
-    ],
-    "decision": "ACCEPT"
-}
