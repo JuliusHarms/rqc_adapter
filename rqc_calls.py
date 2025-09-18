@@ -90,7 +90,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
             # the review data has to be resent on subsequent calls despite the fact that the reviewer
             # has since then declined the review assignment.
             RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
-                reviewassignemnt__article=article, review_assignment__date_declined__isnull=True
+                review_assignment__article=article, review_assignment__date_declined__isnull=True
             ).update(sent_to_rqc=True)
 
         if response.status_code == 200 and use_post:
