@@ -82,8 +82,8 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
         else:
             logger.debug(f'Request to RQC failed with status code: {response.status_code}')
 
-        if response.ok and use_post:
-            RQCCall.objects.get_or_create(article=article, defaults = {'editor_assignments': post_data['edassgmnt_set']})
+        if response.status_code in (200, 303) and use_post:
+            RQCCall.objects.get_or_create(article=article, defaults = {'editor_assignments': post_data['edassgmt_set']})
             # The Reviews that are sent to RQC are saved in order to handle
             # the case where a reviewer accepts a review assignment, then an RQC call is made and then
             # the reviewer declines the review assignment. In that case according to the API description
