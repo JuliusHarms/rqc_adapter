@@ -171,7 +171,7 @@ def get_reviews_info(article, journal):
         reviewer = review_assignment.reviewer
         review_assignment_answers = [ra.answer for ra in review_assignment.review_form_answers()]
         review_text = " ".join(review_assignment_answers)
-        reviewer_has_opted_in = has_opted_in(reviewer, review_assignment)
+        reviewer_has_opted_in = has_opted_in(review_assignment)
 
         review_data = {
             # Visible id is just supposed to identify the review as a sort of name.
