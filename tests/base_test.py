@@ -12,6 +12,8 @@ import os
 from django.http import HttpRequest
 from django.test import TestCase, override_settings
 from django.contrib.contenttypes.models import ContentType
+
+import review.models
 from core import (
     models as core_models,
 )
@@ -29,6 +31,11 @@ from utils.testing import helpers
     }
 )
 class RQCAdapterBaseTestCase(TestCase):
+
+    OPT_IN = RQCReviewerOptingDecision.OptingChoices.OPT_IN
+    OPT_OUT = RQCReviewerOptingDecision.OptingChoices.OPT_OUT
+    UNDEFINED = RQCReviewerOptingDecision.OptingChoices.UNDEFINED
+
     @classmethod
     def create_author(cls, journal, email):
         author = helpers.create_user(
@@ -59,9 +66,9 @@ class RQCAdapterBaseTestCase(TestCase):
 
     @classmethod
     def create_journal_credentials(cls, journal, journal_id, api_key):
-        RQCJournalAPICredentials.objects.create(journal= journal,
+        RQCJournalAPICredentials.objects.create(journal = journal,
                                                 rqc_journal_id = journal_id,
-                                                api_key= api_key)
+                                                api_key = api_key)
 
     @classmethod
     def add_role_to_user(cls, user, role, journal):
@@ -100,12 +107,18 @@ class RQCAdapterBaseTestCase(TestCase):
             "editor",
         ]
         cls.press = helpers.create_press()
+
+        #Create Journals
         cls.journal_one, cls.journal_two = helpers.create_journals()
+
         helpers.create_roles(roles_to_setup)
 
         cls.editor = helpers.create_editor(cls.journal_one)
-        cls.bad_user = helpers.create_second_user(cls.journal_one)
+        cls.editor.last_name = "One"
+        cls.editor.first_name = "Editor"
+        cls.editor.save()
 
+        cls.bad_user = helpers.create_second_user(cls.journal_one)
         # Set-Up author
         cls.author = helpers.create_author(cls.journal_one)
 
@@ -114,7 +127,7 @@ class RQCAdapterBaseTestCase(TestCase):
             journal=cls.journal_one,
             title = 'Active Article',
             stage = submission.models.STAGE_UNDER_REVIEW,
-            date_submitted = datetime.now(timezone.utc),
+            date_submitted = datetime.now(timezone.utc) - timedelta(weeks=3),
             correspondence_author = cls.author,
         )
         cls.active_article.authors.add(cls.author)
@@ -125,8 +138,15 @@ class RQCAdapterBaseTestCase(TestCase):
         cls.reviewer_one.is_active = True
         # Give reviewer one the 'reviewer' role in journal two
         cls.add_role_to_user(cls.reviewer_one, 'reviewer', cls.journal_two)
+        cls.reviewer_one.first_name = "Reviewer"
+        cls.reviewer_one.last_name = "One"
         cls.reviewer_one.save()
 
+        # Give editor an EditorAssigment for active_article
+        cls.editor_assignment = helpers.create_editor_assignment(
+                                            cls.active_article,
+                                            cls.editor,
+                                        )
         # Set Up Journal two
         # Create Editor 2
         cls.editor_two = helpers.create_editor(cls.journal_two)
