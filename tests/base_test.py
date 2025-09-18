@@ -138,7 +138,13 @@ class RQCAdapterBaseTestCase(TestCase):
             reviewer=cls.reviewer_one,
             editor= cls.editor,
             due_date=datetime.now(timezone.utc) + timedelta(weeks=2))
-        cls.review_assignment.date_accepted = datetime.now(timezone.utc)
+        cls.review_assignment.date_requested = datetime.now(timezone.utc) - timedelta(weeks=2)
+        cls.review_assignment.date_accepted = datetime.now(timezone.utc) - timedelta(days=2)
+        cls.review_assignment.date_complete = datetime.now(timezone.utc)
+        # Create review answer
+        review.models.ReviewAssignmentAnswer.objects.create(assignment=cls.review_assignment,
+                                                                   answer="<p>Test Answer<p>"
+                                                                    )
         cls.review_assignment.save()
 
         # Set-Up API credentials for live calls:
