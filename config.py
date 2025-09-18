@@ -4,7 +4,7 @@
 
 # API Configuration
 API_BASE_URL = "https://reviewqualitycollector.org/api"
-API_VERSION = "2023-09-06"
+API_VERSION = "2025-09-16"
 
 # Request Configuration
 # Timeout value in seconds
