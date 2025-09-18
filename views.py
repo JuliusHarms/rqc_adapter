@@ -3,6 +3,7 @@
 """
 from django.db import transaction
 from django.db.models import Q
+from django.urls import reverse
 from django.utils.timezone import now
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
@@ -93,7 +94,10 @@ def log_settings_error(journal_name, user_id, error_msg):
 @decorators.has_journal
 @decorators.editor_user_required_and_can_see_pii
 def submit_article_for_grading(request, article_id):
-    referer = request.META.get('HTTP_REFERER')
+    referrer = request.META.get('HTTP_REFERER', None)
+    mhs_submission_page = referrer if referrer is not None else request.build_absolute_uri(
+                                                                reverse('review_in_review',
+                                                                args=[article_id]))
     article = get_object_or_404(
         submission_models.Article,
         pk=article_id,
@@ -104,18 +108,14 @@ def submit_article_for_grading(request, article_id):
         api_credentials = RQCJournalAPICredentials.objects.get(journal=journal)
     except RQCJournalAPICredentials.DoesNotExist:
         messages.error(request, 'Review Quality Collector API credentials not found.')
-        return redirect(referer)
+        return redirect(mhs_submission_page)
     user = request.user
-    mhs_submissionpage = request.META.get('HTTP_REFERER')
     is_interactive = True
-    post_data = fetch_post_data(article, journal, mhs_submissionpage, is_interactive, user)
+    post_data = fetch_post_data(article, journal, mhs_submission_page, is_interactive, user)
     response = call_mhs_submission(journal_id = api_credentials.rqc_journal_id,
                                    api_key = api_credentials.api_key,
                                    submission_id=article_id, post_data=post_data, article=article)
     print(response) #TODO remove
-    # TODO handle errors and status response:
-    #TODO add messages in templates
-    # TODO what if no message?
     if not response['success']:
         match response['http_status_code']:
             case 400:
@@ -124,7 +124,7 @@ def submit_article_for_grading(request, article_id):
                 messages.error(request, f'Sending the data to RQC failed. The API key was wrong. Details: {response["message"]}' ) #TODO alert editors? see api description
             case 404:
                 messages.error(request, f'Sending the data to RQC failed. The whole URL was malformed or no journal with the given journal id exists at RQC. Details: {response["message"]}')
-            case  _: #TODO what other cases can occur? - change message based on response code
+            case  _:
                 messages.error(request, f'Sending the data to RQC failed. There might be a server error on the side of RQC the data will be automatically resent shortly. Details: {response["message"]}')
                 RQCDelayedCall.objects.create(remaining_tries= 10,
                                                 article = article,
@@ -132,12 +132,13 @@ def submit_article_for_grading(request, article_id):
                                                 journal = journal,
                                                 failure_reason = response['http_status_code'],
                                                 last_attempt_at = now())
-        return redirect(referer)
+        return redirect(mhs_submission_page)
     else:
         if response['http_status_code'] == 303:
-            return redirect(response['redirect_target']) #TODO correct format?
+            messages.success(request, 'Successfully submitted article.')
+            return redirect(response['redirect_target'])
         else:
-            return redirect(referer)
+            return redirect(mhs_submission_page)
 
 # TODO should a user be able to manually enter the url and change opting status?
 # TODO check user login?
