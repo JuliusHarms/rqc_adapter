@@ -13,11 +13,6 @@ from plugins.rqc_adapter.tests.base_test import RQCAdapterBaseTestCase
 from utils.testing import helpers
 
 class TestReviewerOpting(RQCAdapterBaseTestCase):
-
-    OPT_IN = RQCReviewerOptingDecision.OptingChoices.OPT_IN
-    OPT_OUT = RQCReviewerOptingDecision.OptingChoices.OPT_OUT
-    UNDEFINED = RQCReviewerOptingDecision.OptingChoices.UNDEFINED
-
     review_form_view = 'do_review'
     review_form_template = 'review/review_form.html'
     opting_form_template = 'rqc_adapter/reviewer_opting_form.html'
