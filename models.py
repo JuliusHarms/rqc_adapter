@@ -33,11 +33,12 @@ class RQCReviewerOptingDecision(models.Model):
         verbose_name = "RQC Opting Decision"
         verbose_name_plural = "RQC Opting Decisions"
 
-# The opting decision of a reviewer is attached to a review assignment if that reviewer has given a participation preference
+# The opting decision of a reviewer is attached to a review assignment
+# if that reviewer has given a participation preference
 # for that journal year and accepted to review an article or completed his or her review of an article.
-# This helps ensure consistent behaviour on the side of RQC incase the reviewing process for an article spans multiple years
+# This helps ensure consistent behaviour on the side of RQC incase the reviewing process
+# for an article spans multiple years
 # and delimits which articles are included in a reviewers yearly receipt.
-# TODO check this text
 class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
     opting_status = models.IntegerField(choices=RQCReviewerOptingDecision.OptingChoices.choices, null=False, blank=False, default=RQCReviewerOptingDecision.OptingChoices.UNDEFINED)
     review_assignment = models.OneToOneField(ReviewAssignment, null=False, blank=False, on_delete=models.CASCADE)
