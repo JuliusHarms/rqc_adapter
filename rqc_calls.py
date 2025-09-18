@@ -104,9 +104,18 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
                         result['message'] = response_data['user_message']
                     elif "error" in response_data:
                         result['message'] = response_data['error']
-                    # Return info if json exists but no message - is this needed?
-                    elif not response.ok:
-                        result['message'] = f'Request failed: {response.reason}'
+                    elif not response in (200, 303):
+                        error_string = ""
+                        if isinstance(response_data, dict):
+                            errors = []
+                            for field, msgs in response_data.items():
+                                if isinstance(msgs, list):
+                                    for msg in msgs:
+                                        errors.append(f"{field}: {msg}")
+                                else:
+                                    errors.append(f"{field}: {msgs}")
+                            error_string = "; ".join(errors)
+                        result['message'] = f'Request failed: {response.reason} ({error_string})'
                     if result['http_status_code'] == 303:
                         result['redirect_target'] = response_data.get('redirect_target')
                         result['success'] = True
