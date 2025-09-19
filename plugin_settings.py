@@ -19,7 +19,7 @@ DESCRIPTION = 'This plugin connects Janeway to the RQC API, allowing it to repor
 AUTHOR = 'Julius Harms'
 SHORT_NAME = 'rqc_adapter'
 MANAGER_URL = 'rqc_adapter_manager'
-JANEWAY_VERSION = "1.3.8"
+JANEWAY_VERSION = "1.8.0"
 
 logger = get_logger(__name__)
 
