@@ -71,17 +71,24 @@ def register_for_events():
         Events.ON_ARTICLE_ACCEPTED,
         implicit_call_mhs_submission,
     )
-    # todo -> test set editorial decision to ""?
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_DECLINED,
         implicit_call_mhs_submission,
     )
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_UNDECLINED,
-        implicit_call_mhs_submission,
+        implicit_call_mhs_submission
     )
+    # TODO Currently does not work. The event doesn't get raised!
     events_logic.Events.register_for_event(
         Events.ON_REVISIONS_REQUESTED,
+        implicit_call_mhs_submission,
+    )
+    # Stand-In for ON_REVISIONS_REQUESTED event. Works and should be called
+    # most of the time when revisions are requested.
+    # TODO: Remove when ON_REVISIONS_REQUESTED Event works
+    events_logic.Events.register_for_event(
+        Events.ON_REVISIONS_REQUESTED_NOTIFY,
         implicit_call_mhs_submission,
     )
     events_logic.Events.register_for_event(

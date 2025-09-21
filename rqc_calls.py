@@ -1,10 +1,15 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
+
+This file handles the immediate logic of calling the RQC API.
+Exceptions while calling the API get handled here and passed down via the result dictionary
+in the call_rqc_api function.
 """
 
 import json
+from enum import IntEnum
+
 import requests
-from django.db.models import Q
 from requests import RequestException
 
 from utils.logger import get_logger
@@ -17,32 +22,60 @@ from plugins.rqc_adapter.config import VERSION
 
 logger = get_logger(__name__)
 
+class RQCErrorCodes(IntEnum):
+    CONNECTION_ERROR = -1
+    TIMEOUT = -2
+    REQUEST_ERROR = -3
+    UNKNOWN_ERROR = -3
+
 def call_mhs_apikeycheck(journal_id: int, api_key: str) -> dict:
     """
     Verify API key with the RQC service.
-    :param journal_id: str: The ID of the journal to check
+    :param journal_id: str: The journal Id as issued by RQC
     :param api_key: str: The API key to validate
-    :return:int: dict: Response data if available and valid or raises RequestException: If the request fails
+    :return:int: dict: Response data dictionary. See call_rqc_api for details.
     """
     url = f'{API_BASE_URL}/mhs_apikeycheck/{journal_id}'
     return call_rqc_api(url, api_key)
 
 def call_mhs_submission(journal_id: int, api_key: str, submission_id, post_data: str, article=None) -> dict:
     """
-    TODO
+    Calls the mhs_submission endpoint of the RQC API.
+    :param journal_id: str: The journal Id as issued by RQC
+    :param api_key: str: The API key to validate
+    :param submission_id: str: id of the submission (article)
+    :param post_data: str: data to send in the request
+    :param article: Article object
+    :return: dict: Response data dictionary. See call_rqc_api for details.
     """
     url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
+    print(url) #TODO remove
     return call_rqc_api(url , api_key, use_post=True, post_data=post_data, article=article)
 
+def log_call_result(result: dict):
+    if result['success']:
+        logger.info(f'RQC API call succeeded. More information: {result}')
+    else:
+        logger.info(f'RQC API call failed. More information: {result}')
+
 def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article=None) -> dict:
+    """Calls the RQC API. Calling endpoint depends on use_post.
+    :param url: str: URL to call
+    :param api_key: str: API key
+    :param use_post: bool: Whether to use post request or not
+    :param post_data: str: Post data
+    :param article: str: Article object
+    :return: dict: Response data and error message dictionary."""
     result = {
-        'success': False,
+        'success': False, # Boolean if satus code is 200 or 303. Because RQC responds with 303
+        # in the case of a successful (accepted) call that was triggered by an interactive user
         'http_status_code': None,
-        'message': None,
-        'redirect_target': None,
+        # Contains http status code or RQCErrorCode defined above - Integer
+        'message': None, # Contains either a message by RQC to the user if present or otherwise information
+        # that can help users.
+        'redirect_target': None, #Set if the RQC response contains a redirect target. None otherwise.
     }
     try:
-        #TODO database access somewhere else is better
         try:
             current_version = Version.objects.all().order_by('-number').first()
             if not current_version:
@@ -58,8 +91,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
             'Authorization': f'Bearer {api_key}',
         }
         if use_post:
-            #headers['Content-Type'] = 'application/json'
-            # todo make redirects work?
+            headers['Content-Type'] = 'application/json'
             print(headers, post_data) #todo remove?
             response = requests.post(
                 url,
@@ -92,8 +124,9 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
             RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
                 review_assignment__article=article, review_assignment__date_declined__isnull=True
             ).update(sent_to_rqc=True)
-
+        print("RQC response raw:", response.text) # TODO remove
         if response.status_code == 200 and use_post:
+            log_call_result(result)
             return result
         # Otherwise try to parse the body
         else:
