@@ -61,7 +61,8 @@ def get_editorial_decision(article):
     else:
         try:
             revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first()
-            if revision_request.type == 'minor_revisions':
+            # Conditional accept gets mapped to 'minor revisions' in RQC.
+            if revision_request.type == 'minor_revisions' or revision_request.type == 'conditional_accept':
                 return 'MINORREVISION'
             else:
                 return 'MAJORREVISION'
