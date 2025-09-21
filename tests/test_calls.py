@@ -124,7 +124,25 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
 # Delayed Calls
 class TestDelayedCalls(TestCallsToMHSSubmissionEndpointMocked):
-    pass
+    # Delayed Call created
+    def test_delayed_call_created(self):
+        """Test that a delayed call is created with the given status codes"""
+        response_codes = list(range(500, 505)) + [RQCErrorCodes.CONNECTION_ERROR,
+                                                  RQCErrorCodes.TIMEOUT, RQCErrorCodes.REQUEST_ERROR]
+        for response_code in response_codes:
+            self.mock_call.return_value = self.create_mock_call_return_value(success=False, http_status_code=response_code)
+            self.post_to_rqc(self.active_article.id)
+            self.mock_call.assert_called()
+            self.assertTrue(RQCDelayedCall.objects.filter(article=self.active_article, failure_reason=str(response_code), remaining_tries=10).exists())
+
+    def test_delayed_call_not_created(self):
+        """Test that a delayed call is not created with the given status codes"""
+        response_codes = [400,403,404, RQCErrorCodes.UNKNOWN_ERROR]
+        for response_code in response_codes:
+            self.mock_call.return_value = self.create_mock_call_return_value(success=False, http_status_code=response_code)
+            self.post_to_rqc(self.active_article.id)
+            self.mock_call.assert_called()
+            self.assertFalse(RQCDelayedCall.objects.filter(article=self.active_article, failure_reason=str(response_code), remaining_tries=10).exists())
 
 # Integration with RQC API
 @skipUnless(has_api_credentials_env, "No API key found. Cannot make API call integration tests.")
