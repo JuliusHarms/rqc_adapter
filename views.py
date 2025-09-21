@@ -124,14 +124,15 @@ def submit_article_for_grading(request, article_id):
                 messages.error(request, f'Sending the data to RQC failed. The API key was wrong. Details: {response["message"]}' ) #TODO alert editors? see api description
             case 404:
                 messages.error(request, f'Sending the data to RQC failed. The whole URL was malformed or no journal with the given journal id exists at RQC. Details: {response["message"]}')
-            case  _:
+            case  RQCErrorCodes.CONNECTION_ERROR, RQCErrorCodes.TIMEOUT, RQCErrorCodes.REQUEST_ERROR ,500, 502, 503, 504:
                 messages.error(request, f'Sending the data to RQC failed. There might be a server error on the side of RQC the data will be automatically resent shortly. Details: {response["message"]}')
                 RQCDelayedCall.objects.create(remaining_tries= 10,
                                                 article = article,
-                                                article_id = article.pk,
-                                                journal = journal,
                                                 failure_reason = response['http_status_code'],
-                                                last_attempt_at = now())
+                                                last_attempt_at = utc_now())
+            case _:
+                messages.error(request,
+                                      f'Sending the data to RQC failed. Details: {response["message"]}')
         return redirect(mhs_submission_page)
     else:
         if response['http_status_code'] == 303:

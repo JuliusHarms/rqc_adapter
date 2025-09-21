@@ -49,15 +49,27 @@ class TestCallsToMHSSubmissionEndpoint(RQCAdapterBaseTestCase):
         self.create_session_with_editor()
 
 class TestCallsToMHSSubmissionEndpointMocked(TestCallsToMHSSubmissionEndpoint):
-    pass
+
+    @staticmethod
+    def create_mock_call_return_value(success=True,
+                                      http_status_code=200,
+                                      message=None, redirect_target=None):
+       return	{
+            'success': success,
+            'http_status_code': http_status_code,
+            'message': message,
+            'redirect_target': redirect_target,
+        }
+
+    def setUp(self):
+        super().setUp()
+        self.create_journal_credentials(self.journal_one, 9, 'Test key')
+        patcher = patch('plugins.rqc_adapter.rqc_calls.call_rqc_api')
+        self.mock_call = patcher.start()
+        self.addCleanup(patcher.stop)
 
 class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
     pass
-
-# Data is correctly fetched
-
-# RQC-Service Contacted
-
 # Salt Creation if not yet existent
 
 # Opt-In Opt-Out - correctly handled
