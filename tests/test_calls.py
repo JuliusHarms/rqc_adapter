@@ -61,6 +61,12 @@ class TestCallsToMHSSubmissionEndpointMocked(TestCallsToMHSSubmissionEndpoint):
             'redirect_target': redirect_target,
         }
 
+    def call_and_get_args_back(self):
+        self.post_to_rqc(self.active_article.id)
+        self.mock_call.assert_called()
+        args, kwargs = self.mock_call.call_args
+        return args, kwargs
+
     def setUp(self):
         super().setUp()
         self.create_journal_credentials(self.journal_one, 9, 'Test key')
@@ -69,16 +75,34 @@ class TestCallsToMHSSubmissionEndpointMocked(TestCallsToMHSSubmissionEndpoint):
         self.addCleanup(patcher.stop)
 
 class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
-    pass
-# Salt Creation if not yet existent
 
-# Opt-In Opt-Out - correctly handled
+    def test_reviewer_anonymized_without_opt_in(self):
+        """Tests if reviewers that are not opted in are anonymized."""
+        args, kwargs =self.call_and_get_args_back()
+        post_data = args[3]
+        review_set = post_data.get('review_set')
+        review_one = review_set[0]
+        self.assertEqual(review_one['text'], '')
+        reviewer_email = review_one['reviewer']['email']
+        self.assertNotEqual(reviewer_email, self.reviewer_one.email)
+        self.assertTrue("@example.edu" in reviewer_email)
+
+#TODO Opt-In Opt-Out - correctly handled
+
+    def test_interactive_user_and_mhs_submissionpage_set(self):
+        """Tests that interactive user and mhs_submissionpage are set when making an explicit call."""
+        args, kwargs =self.call_and_get_args_back()
+        post_data = args[3]
+        self.assertNotEqual(post_data['interactive_user'], self.editor.email)
+        self.assertNotEqual(post_data['mhs_submissionpage'],reverse(self.review_management_view, args=[self.active_article.id]))
 
 # Implicit Calls
 class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
     make_editorial_decision_view = 'review_decision'
     request_revisions_view = 'review_request_revisions'
+
+    # TODO interactive user is not set
 
     def make_editorial_decision(self, decision):
         """Makes a call to the review_decision view with form data."""
@@ -144,7 +168,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
 # Delayed Calls
 class TestDelayedCalls(TestCallsToMHSSubmissionEndpointMocked):
-    # Delayed Call created
+    # Tests for the creation of delayed calls
     def test_delayed_call_created(self):
         """Test that a delayed call is created with the given status codes"""
         response_codes = list(range(500, 505)) + [RQCErrorCodes.CONNECTION_ERROR,
@@ -163,6 +187,10 @@ class TestDelayedCalls(TestCallsToMHSSubmissionEndpointMocked):
             self.post_to_rqc(self.active_article.id)
             self.mock_call.assert_called()
             self.assertFalse(RQCDelayedCall.objects.filter(article=self.active_article, failure_reason=str(response_code), remaining_tries=10).exists())
+
+    # Tests the creation of cron tab
+    def test_cron_tab_created(self):
+        pass
 
 # Integration with RQC API
 @skipUnless(has_api_credentials_env, "No API key found. Cannot make API call integration tests.")
