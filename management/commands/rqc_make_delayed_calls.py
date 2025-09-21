@@ -36,36 +36,27 @@ class Command(BaseCommand):
         :param options: None
         :return: None
         """
-        queue = RQCDelayedCall.objects.filter(last_attempt_at__gte=now()+timedelta(hours=24)).order_by('-last_attempt_at')
+        queue = RQCDelayedCall.objects.filter(last_attempt_at__gte=utc_now()+timedelta(hours=24)).order_by('-last_attempt_at')
         for call in queue:
             if call.is_valid:
                 article = call.article
                 article_id = call.article.pk
                 journal = call.article.journal
                 post_data = fetch_post_data(article = article, journal = journal)
-                response = call_mhs_submission(get_journal_id(journal), get_journal_api_key(journal), submission_id=article_id, post_data=post_data, article=article)
-                call.remaining_tries = call.remaining_tries + 1
-                #TODO handle response
+                try:
+                    credentials = RQCJournalAPICredentials.objects.get(journal=journal)
+                except RQCJournalAPICredentials.DoesNotExist:
+                    logger.warning("Delayed call to RQC was attempted but no RQC API credentials found.")
+                    return
+                response = call_mhs_submission(credentials.rqc_journal_id, credentials.api_key, submission_id=article_id, post_data=post_data, article=article)
+                logger.info(f"Delayed call to RQC was attempted for article {article_id}:{article.title}.")
+                call.remaining_tries = call.remaining_tries - 1
                 if not response['success']:
-                    call.last_attempt_at = now()
-                    match response['http_status_code']:
-                        case '400':
-                            print(f"error: {response['http_status_code']} {response['message']}")  # TODO temp  #TODO temp
-                            # implementation error?
-                        case '403':
-                            print(f"error: {response['http_status_code']} {response['message']}")
-                            # TODO temp  #TODO temp
-                            # the API key is wrong. If the MHS had previously validated the API key, this presumably means that the API key has changed at the RQC side. In that case, the journal editors should be alerted because no subsequent API call is going to be successful. The response body will contain a field error meant to be displayed to the user.
-                        case '404':
-                            print(f"error: {response['http_status_code']} {response['message']}") #TODO temp
-                            # whole URL was malformed or no journal with the given rqc_journal_id exists at RQC.
-                        case _:  # TODO what other cases can occur? - change message based on response code
-                            print(f"error: {response['http_status_code']} {response['message']}")
+                    call.last_attempt_at = utc_now()
                     # If a call is unsuccessful we should stop trying for the day.
                     return
                 else:
                     call.delete()
             else:
                 call.delete()
-            sleep(1) #TODO sleep between calls? or use asyncio
-
+            sleep(1)
