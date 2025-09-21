@@ -3,6 +3,7 @@
 """
 
 import os
+from utils.logger import get_logger
 
 from django.core.management.base import BaseCommand
 from django.conf import settings
@@ -12,8 +13,8 @@ try:
 except (ImportError, ModuleNotFoundError):
     crontab = None
 
-# todo give credit
-# logging?
+logger = get_logger(__name__)
+
 class Command(BaseCommand):
     """
     Installs the cron task for retrying failed RQC calls.
@@ -51,10 +52,11 @@ class Command(BaseCommand):
         else:
             command = '%s' % django_command
         cron_job = tab.new(command)
-        #todo shift cron time? or let users set the cron job time?
+        #TODO shift cron time? or let users set the cron job time?
         cron_job.setall('0 8 * * *')
         tab.write()
         self.stdout.write(
             self.style.SUCCESS('Successfully installed RQC cronjob.')
         )
+        logger.info(f'Successfully installed RQC cronjob.')
         self.stdout.flush()

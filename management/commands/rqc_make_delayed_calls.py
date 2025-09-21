@@ -5,18 +5,21 @@
 from datetime import timedelta
 from time import sleep
 
-from django.utils.timezone import now
 from django.core.management.base import BaseCommand
 
-from plugins.rqc_adapter.models import RQCDelayedCall
-from plugins.rqc_adapter.rqc_calls import fetch_post_data, call_mhs_submission
+from plugins.rqc_adapter.models import RQCDelayedCall, RQCJournalAPICredentials
+from plugins.rqc_adapter.rqc_calls import call_mhs_submission
+from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
+from plugins.rqc_adapter.utils import utc_now
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     import crontab
 except (ImportError, ModuleNotFoundError):
     crontab = None
 
-# todo give credit
 class Command(BaseCommand):
     """
     Retries failed RQC Calls.
@@ -25,7 +28,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--action', default="")
-# TODO multiple calls for the same article waht if the info is old?
+
     def handle(self, *args, **options):
         """
         Retries failed RQC calls.
