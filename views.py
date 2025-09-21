@@ -4,7 +4,6 @@
 from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
-from django.utils.timezone import now
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
