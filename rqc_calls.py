@@ -152,16 +152,24 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
                     if result['http_status_code'] == 303:
                         result['redirect_target'] = response_data.get('redirect_target')
                         result['success'] = True
-                        # TODO additional excepts
                 except ValueError:
                     result[
                         "message"] = f'Request failed and no error message was provided. Request status: {response.reason}'
             except json.decoder.JSONDecodeError:
                 result["message"] = f'Request succeeded but response body was malformed. Request status: {response.reason}'
+            log_call_result(result)
             return result
-    #TODO look further at different types of request errors + appropriate response msg.
-    except (requests.ConnectionError, requests.Timeout):
+    except requests.Timeout:
+        result['http_status_code'] = RQCErrorCodes.TIMEOUT
+        result['message'] = 'API request timed out. Please try again later.'
+    except requests.ConnectionError:
+        result['http_status_code'] = RQCErrorCodes.CONNECTION_ERROR
         result['message'] = 'Unable to connect to API service. Please try again later.'
     except RequestException as e:
+        result['http_status_code'] = RQCErrorCodes.REQUEST_ERROR
         result['message'] = f'API service returned an invalid response: {str(e)}'
+    except Exception as e:
+        result['http_status_code'] = RQCErrorCodes.UNKNOWN_ERROR
+        result['message'] = f'Unexpected error: {str(e)}'
+    log_call_result(result)
     return result
