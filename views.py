@@ -19,7 +19,7 @@ from submission import models as submission_models
 from plugins.rqc_adapter import forms
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCDelayedCall, RQCJournalAPICredentials, \
     RQCReviewerOptingDecisionForReviewAssignment
-from plugins.rqc_adapter.rqc_calls import call_mhs_submission
+from plugins.rqc_adapter.rqc_calls import call_mhs_submission, RQCErrorCodes
 from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 
 logger = get_logger(__name__)

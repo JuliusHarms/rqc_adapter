@@ -4,19 +4,22 @@
 This file contains tests for calls to the mhs_submission endpoint.
 """
 import os
-from lib2to3.pytree import convert
+from datetime import timedelta
 from unittest import skipUnless
+from unittest.mock import patch
 
 from django.contrib.messages import get_messages
-from django.forms.models import model_to_dict
 from django.utils import timezone
 
-from plugins.rqc_adapter.models import RQCJournalAPICredentials, RQCReviewerOptingDecision, \
-    RQCReviewerOptingDecisionForReviewAssignment
+from plugins.rqc_adapter.events import implicit_call_mhs_submission
+from plugins.rqc_adapter.models import RQCReviewerOptingDecision, \
+    RQCReviewerOptingDecisionForReviewAssignment, RQCDelayedCall
+from plugins.rqc_adapter.rqc_calls import RQCErrorCodes
 from plugins.rqc_adapter.tests.base_test import RQCAdapterBaseTestCase
 from django.urls import reverse
 
-from plugins.rqc_adapter.utils import convert_date_to_rqc_format
+from review.models import RevisionRequest
+from review.views import review_decision
 
 has_api_credentials_env = os.getenv("RQC_API_KEY") and os.getenv("RQC_JOURNAL_ID")
 
@@ -66,6 +69,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
     request_revisions_view = 'review_request_revisions'
 
     def make_editorial_decision(self, decision):
+        """Makes a call to the review_decision view with form data."""
         form_data = {
             "to_address": "author@example.com",
             "subject": "Test",
@@ -74,6 +78,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         self.client.post(reverse(self.make_editorial_decision_view, args=[self.active_article.id, decision]), form_data)
 
     def make_revision_request(self, revision_type):
+        """Makes a call to the request_revisions view with form data"""
         form_data = {
             "date_due": (timezone.now() + timedelta(days=7)).date(),
             "type": revision_type,
@@ -82,6 +87,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         self.client.post(reverse(self.request_revisions_view, args=[self.active_article.id]), form_data)
 
     def test_implicit_calls_with_article_argument(self):
+        """Just Tests if implicit_call_mhs_submission function call results in a call to RQC"""
         kwargs = {
             'article': self.active_article,
             'request': None
@@ -90,6 +96,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         self.mock_call.assert_called()
 
     def test_implicit_calls_with_revisions_argument(self):
+        """Tests if the implicit calls function works with a revision request object in kwargs"""
         revision_request = RevisionRequest.objects.create(
             article=self.active_article,
             editor=self.editor,
@@ -105,6 +112,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         self.mock_call.assert_called()
 
     def test_implicit_call_made_upon_editorial_decision(self):
+        """Tests if implicit calls are made upon editorial decision"""
         editorial_decisions = ['accept', 'decline', 'undecline']
         for decision in editorial_decisions:
             self.make_editorial_decision(decision)
@@ -157,6 +165,7 @@ class TestSubmissionCallsAPIIntegration(TestCallsToMHSSubmissionEndpoint):
         self.journal_one.save()
 
     def test_make_successful_call(self):
+        """Tests a successful call to RQC with the credentials from the environment."""
         self.opt_in_reviewer_one()
         self.get_review_management(self.active_article.id)
         response = self.post_to_rqc(self.active_article.id, self.journal_one.domain)
