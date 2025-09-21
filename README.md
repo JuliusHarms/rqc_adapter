@@ -54,6 +54,6 @@ https://reviewqualitycollector.org/t/api.
 
 ### 3.3 Daily use
 
-## 4. How OJS concepts are mapped to RQC concepts
+## 4. How Janeway concepts are mapped to RQC concepts
 
 ## 5. Limitations

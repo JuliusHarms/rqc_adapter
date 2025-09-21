@@ -18,7 +18,12 @@ def implicit_call_mhs_submission(**kwargs) -> dict | None:
     This function makes a call to the MHS submission API. Triggers when the editorial decision
     of a submission changes.
     """
-    article = kwargs['article']
+    # In case of revision requests the article parameter is not present in the kwargs
+    revision_request = kwargs.get('revision', None)
+    if revision_request is None:
+        article = kwargs.get('article', None)
+    else:
+        article = revision_request.article
     request = kwargs['request']
 
     if article is None:
@@ -41,7 +46,7 @@ def implicit_call_mhs_submission(**kwargs) -> dict | None:
     journal_id = credentials.journal_id
     api_key = credentials.api_key
     submission_id = article.pk
-    post_data = fetch_post_data(user=request.user, article=article, journal= request.journal)
+    post_data = fetch_post_data(user=None, article=article, journal= journal)
     return call_mhs_submission(journal_id=journal_id,
                                api_key=api_key,
                                submission_id=submission_id,
