@@ -92,7 +92,7 @@ def generate_random_salt(length=12):
     """
     characters = string.ascii_letters + string.digits
     salt = ''.join(secrets.choice(characters) for _ in range(length))
-    while SettingValue.objects.filter(value=salt).exists():
+    while RQCJournalSalt.objects.filter(value=salt).exists():
         salt = ''.join(secrets.choice(characters) for _ in range(length))
     return salt
 
