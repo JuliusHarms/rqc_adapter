@@ -61,7 +61,66 @@ class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
 # Implicit Calls
 class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
-    pass
+
+    make_editorial_decision_view = 'review_decision'
+    request_revisions_view = 'review_request_revisions'
+
+    def make_editorial_decision(self, decision):
+        form_data = {
+            "to_address": "author@example.com",
+            "subject": "Test",
+            "body": "Test",
+        }
+        self.client.post(reverse(self.make_editorial_decision_view, args=[self.active_article.id, decision]), form_data)
+
+    def make_revision_request(self, revision_type):
+        form_data = {
+            "date_due": (timezone.now() + timedelta(days=7)).date(),
+            "type": revision_type,
+            "editor_note": "Please fix these issues",
+        }
+        self.client.post(reverse(self.request_revisions_view, args=[self.active_article.id]), form_data)
+
+    def test_implicit_calls_with_article_argument(self):
+        kwargs = {
+            'article': self.active_article,
+            'request': None
+        }
+        implicit_call_mhs_submission(**kwargs)
+        self.mock_call.assert_called()
+
+    def test_implicit_calls_with_revisions_argument(self):
+        revision_request = RevisionRequest.objects.create(
+            article=self.active_article,
+            editor=self.editor,
+            date_due=timezone.now()+timedelta(days=7),
+            type='minor_revisions',
+            editor_note="Please fix these issues",
+        )
+        kwargs = {
+            'revision': revision_request,
+            'request': None
+        }
+        implicit_call_mhs_submission(**kwargs)
+        self.mock_call.assert_called()
+
+    def test_implicit_call_made_upon_editorial_decision(self):
+        editorial_decisions = ['accept', 'decline', 'undecline']
+        for decision in editorial_decisions:
+            self.make_editorial_decision(decision)
+            self.mock_call.assert_called()
+
+    # TODO currently should not work due to the ON_REVISIONS_REQUEST event not firing
+    def test_implicit_call_made_upon_revisions_requested(self):
+        revision_types = ["minor_revisions", "major_revisions"]
+        for revision_type in revision_types:
+            self.make_revision_request(revision_type)
+            self.assertTrue(
+                RevisionRequest.objects.filter(
+                    article=self.active_article, editor=self.editor
+                ).exists()
+            )
+            self.mock_call.assert_called()
 
 # Delayed Calls
 class TestDelayedCalls(TestCallsToMHSSubmissionEndpointMocked):
