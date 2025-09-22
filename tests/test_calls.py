@@ -6,9 +6,11 @@ This file contains tests for calls to the mhs_submission endpoint.
 import os
 from datetime import timedelta
 from unittest import skipUnless
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
+from django.conf import settings
 from django.contrib.messages import get_messages
+from django.core.management import call_command
 from django.utils import timezone
 
 from plugins.rqc_adapter.events import implicit_call_mhs_submission
@@ -78,8 +80,8 @@ class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
     def test_reviewer_anonymized_without_opt_in(self):
         """Tests if reviewers that are not opted in are anonymized."""
-        args, kwargs =self.call_and_get_args_back()
-        post_data = args[3]
+        args, kwargs = self.call_and_get_args_back()
+        post_data = kwargs.get('post_data')
         review_set = post_data.get('review_set')
         review_one = review_set[0]
         self.assertEqual(review_one['text'], '')
@@ -87,16 +89,26 @@ class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         self.assertNotEqual(reviewer_email, self.reviewer_one.email)
         self.assertTrue("@example.edu" in reviewer_email)
 
-#TODO Opt-In Opt-Out - correctly handled
+    def test_reviewer_not_anonymized_when_opted_in(self):
+        """Tests that opted in reviewers are not anonymized."""
+        self.opt_in_reviewer_one()
+        args, kwargs = self.call_and_get_args_back()
+        post_data = kwargs.get('post_data')
+        review_set = post_data.get('review_set')
+        review_one = review_set[0]
+        # Review answer gets added to post data
+        self.assertTrue("<p>Test Answer<p>" in review_one['text'])
+        # Reviewer Email gets transmitted
+        reviewer_email = review_one['reviewer']['email']
+        self.assertEqual(reviewer_email, self.reviewer_one.email)
 
     def test_interactive_user_and_mhs_submissionpage_set(self):
         """Tests that interactive user and mhs_submissionpage are set when making an explicit call."""
         args, kwargs =self.call_and_get_args_back()
-        post_data = args[3]
-        self.assertNotEqual(post_data['interactive_user'], self.editor.email)
+        post_data = kwargs.get('post_data')
+        self.assertEqual(post_data['interactive_user'], self.editor.email)
         self.assertNotEqual(post_data['mhs_submissionpage'],reverse(self.review_management_view, args=[self.active_article.id]))
 
-# Implicit Calls
 class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
     make_editorial_decision_view = 'review_decision'
@@ -123,7 +135,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         self.client.post(reverse(self.request_revisions_view, args=[self.active_article.id]), form_data)
 
     def test_implicit_calls_with_article_argument(self):
-        """Just Tests if implicit_call_mhs_submission function call results in a call to RQC"""
+        """Just tests if implicit_call_mhs_submission function call results in a call to RQC"""
         kwargs = {
             'article': self.active_article,
             'request': None
@@ -171,11 +183,11 @@ class TestDelayedCalls(TestCallsToMHSSubmissionEndpointMocked):
     # Tests for the creation of delayed calls
     def test_delayed_call_created(self):
         """Test that a delayed call is created with the given status codes"""
-        response_codes = list(range(500, 505)) + [RQCErrorCodes.CONNECTION_ERROR,
+        response_codes = [500, 502, 503, 504] + [RQCErrorCodes.CONNECTION_ERROR,
                                                   RQCErrorCodes.TIMEOUT, RQCErrorCodes.REQUEST_ERROR]
         for response_code in response_codes:
             self.mock_call.return_value = self.create_mock_call_return_value(success=False, http_status_code=response_code)
-            self.post_to_rqc(self.active_article.id)
+            reponse = self.post_to_rqc(self.active_article.id)
             self.mock_call.assert_called()
             self.assertTrue(RQCDelayedCall.objects.filter(article=self.active_article, failure_reason=str(response_code), remaining_tries=10).exists())
 
@@ -186,11 +198,25 @@ class TestDelayedCalls(TestCallsToMHSSubmissionEndpointMocked):
             self.mock_call.return_value = self.create_mock_call_return_value(success=False, http_status_code=response_code)
             self.post_to_rqc(self.active_article.id)
             self.mock_call.assert_called()
-            self.assertFalse(RQCDelayedCall.objects.filter(article=self.active_article, failure_reason=str(response_code), remaining_tries=10).exists())
+            self.assertFalse(RQCDelayedCall.objects.filter(article=self.active_article,
+                                                           failure_reason=str(response_code),
+                                                           remaining_tries=10).exists())
 
-    # Tests the creation of cron tab
-    def test_cron_tab_created(self):
-        pass
+    @patch('rqc_adapter.management.commands.rqc_install_cronjob.crontab.CronTab')
+    def test_cron_tab_created(self, mock_crontab):
+        """Tests creation of crontab."""
+        mock_tab = MagicMock()
+        mock_job =MagicMock()
+        mock_crontab.return_value = mock_tab
+        mock_tab.new.return_value = mock_job
+
+        with patch.dict(os.environ, {'VIRTUAL_ENV': 'mock/virtualenv'}):
+            call_command('rqc_install_cronjob', action='install')
+        mock_crontab.assert_called_once_with(user=True)
+        expected_command = f"/mock/virtualenv/bin/python3 {settings.BASE_DIR}/manage.py rqc_make_delayed_calls"
+        mock_tab.new.assert_called_once_with(expected_command)
+        mock_job.setall.assert_called_once_with("0 8 * * *")
+        mock_tab.write.assert_called_once()
 
 # Integration with RQC API
 @skipUnless(has_api_credentials_env, "No API key found. Cannot make API call integration tests.")
