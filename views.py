@@ -118,16 +118,29 @@ def submit_article_for_grading(request, article_id):
     if not response['success']:
         match response['http_status_code']:
             case 400:
-                messages.error(request, f'Sending the data to RQC failed. The message sent to RQC was malformed. Details: {response["message"]}')
+                messages.error(request, f'Sending the data to RQC failed. '
+                                        f'The message sent to RQC was malformed. '
+                                        f'Details: {response["message"]}')
             case 403:
-                messages.error(request, f'Sending the data to RQC failed. The API key was wrong. Details: {response["message"]}' ) #TODO alert editors? see api description
+                messages.error(request, f'Sending the data to RQC failed. '
+                                        f'The API key was wrong. Please check the validity of your '
+                                        f'API credentials.'
+                                        f'Details: {response["message"]}' ) #TODO alert editors? according to the API description editors should be alerted.
             case 404:
-                messages.error(request, f'Sending the data to RQC failed. The whole URL was malformed or no journal with the given journal id exists at RQC. Details: {response["message"]}')
-            case  RQCErrorCodes.CONNECTION_ERROR, RQCErrorCodes.TIMEOUT, RQCErrorCodes.REQUEST_ERROR ,500, 502, 503, 504:
+                messages.error(request, f'Sending the data to RQC failed. '
+                                        f'The whole URL was malformed or no journal with the given '
+                                        f'journal id exists at RQC. Details: {response["message"]}')
+            case (RQCErrorCodes.CONNECTION_ERROR
+                  | RQCErrorCodes.TIMEOUT
+                  | RQCErrorCodes.REQUEST_ERROR
+                  | 500
+                  | 502
+                  | 503
+                  | 504):
                 messages.error(request, f'Sending the data to RQC failed. There might be a server error on the side of RQC the data will be automatically resent shortly. Details: {response["message"]}')
                 RQCDelayedCall.objects.create(remaining_tries= 10,
                                                 article = article,
-                                                failure_reason = response['http_status_code'],
+                                                failure_reason = str(response['http_status_code']),
                                                 last_attempt_at = utc_now())
             case _:
                 messages.error(request,
