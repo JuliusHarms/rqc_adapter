@@ -2,7 +2,6 @@
 
 **Created:** 2025, Julius Harms  
 **Version:** 22.09.2025  
-**Status:** **Beta test** - please ask if you want to participate  
 
 ## 1. What It Is
 
@@ -78,6 +77,6 @@ Currently Janeway does not fire the `ON_REVISIONS_REQUESTED` event which means t
 
 ## 6. Current Implementation Status
 
-The plugin is currently still in development but mostly functional.
+The plugin is currently still in development.
 
 **RQC's implementation status:** https://reviewqualitycollector.org/t/past-and-future#status
