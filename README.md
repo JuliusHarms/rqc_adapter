@@ -1,6 +1,7 @@
 # Review Quality Collector (RQC) Plugin for Janeway
 
 **Created:** 2025, Julius Harms, Freie Universität Berlin
+
 **Version:** 22.09.2025  
 
 ## 1. What It Is
