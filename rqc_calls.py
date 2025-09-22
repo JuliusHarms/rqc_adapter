@@ -26,7 +26,7 @@ class RQCErrorCodes(IntEnum):
     CONNECTION_ERROR = -1
     TIMEOUT = -2
     REQUEST_ERROR = -3
-    UNKNOWN_ERROR = -3
+    UNKNOWN_ERROR = -4
 
 def call_mhs_apikeycheck(journal_id: int, api_key: str) -> dict:
     """
@@ -49,7 +49,6 @@ def call_mhs_submission(journal_id: int, api_key: str, submission_id, post_data:
     :return: dict: Response data dictionary. See call_rqc_api for details.
     """
     url = f'{API_BASE_URL}/mhs_submission/{journal_id}/{submission_id}'
-    print(url) #TODO remove
     return call_rqc_api(url , api_key, use_post=True, post_data=post_data, article=article)
 
 def log_call_result(result: dict):
@@ -92,7 +91,6 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
         }
         if use_post:
             headers['Content-Type'] = 'application/json'
-            print(headers, post_data) #todo remove?
             response = requests.post(
                 url,
                 json = post_data,
