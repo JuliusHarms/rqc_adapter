@@ -12,7 +12,6 @@ from review import logic
 from review.models import ReviewAssignment
 from utils.logger import get_logger
 from security import decorators
-from security.decorators import production_manager_roles
 from submission import models as submission_models
 
 from plugins.rqc_adapter import forms
@@ -24,7 +23,7 @@ from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 logger = get_logger(__name__)
 
 @decorators.has_journal
-@production_manager_roles
+@decorators.editor_or_manager
 def manager(request):
     template = 'rqc_adapter/manager.html'
     journal = request.journal
@@ -43,6 +42,8 @@ def manager(request):
         form = forms.RqcSettingsForm()
     return render(request, template, {'form': form, 'api_key_set': api_key_set})
 
+@decorators.has_journal
+@decorators.editor_or_manager
 def handle_journal_settings_update(request):
     if request.method == 'POST':
         template = 'rqc_adapter/manager.html'
@@ -153,9 +154,6 @@ def submit_article_for_grading(request, article_id):
         else:
             return redirect(mhs_submission_page)
 
-# TODO should a user be able to manually enter the url and change opting status?
-# TODO check user login?
-# TODO user should be able to get here manually
 # The request must provide a journal object because the opting decision in specific to the journal
 # The user must be a reviewer since only reviewers should be able to opt in or out
 @decorators.has_journal
