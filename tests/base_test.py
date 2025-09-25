@@ -92,6 +92,13 @@ class RQCAdapterBaseTestCase(TestCase):
         session['user'] = self.editor.id
         session.save()
 
+    def create_session_with_bad_user(self):
+        session = self.client.session
+        session['journal'] = self.journal_one
+        session['user'] = self.bad_user
+        session.save()
+        self.client.force_login(self.bad_user)
+
     def create_session_with_editor(self):
         self.login_editor()
         self.create_session()

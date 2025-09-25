@@ -21,7 +21,6 @@ from plugins.rqc_adapter.tests.base_test import RQCAdapterBaseTestCase
 from django.urls import reverse
 
 from review.models import RevisionRequest
-from review.views import review_decision
 
 has_api_credentials_env = os.getenv("RQC_API_KEY") and os.getenv("RQC_JOURNAL_ID")
 
@@ -168,7 +167,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
     # TODO currently should not work due to the ON_REVISIONS_REQUEST event not firing
     def test_implicit_call_made_upon_revisions_requested(self):
-        revision_types = ["minor_revisions", "major_revisions"]
+        revision_types = ["minor_revisions", "major_revisions", "conditional_acceptance"]
         for revision_type in revision_types:
             self.make_revision_request(revision_type)
             self.assertTrue(
@@ -180,14 +179,14 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
 # Delayed Calls
 class TestDelayedCalls(TestCallsToMHSSubmissionEndpointMocked):
-    # Tests for the creation of delayed calls
+
     def test_delayed_call_created(self):
         """Test that a delayed call is created with the given status codes"""
         response_codes = [500, 502, 503, 504] + [RQCErrorCodes.CONNECTION_ERROR,
                                                   RQCErrorCodes.TIMEOUT, RQCErrorCodes.REQUEST_ERROR]
         for response_code in response_codes:
             self.mock_call.return_value = self.create_mock_call_return_value(success=False, http_status_code=response_code)
-            reponse = self.post_to_rqc(self.active_article.id)
+            self.post_to_rqc(self.active_article.id)
             self.mock_call.assert_called()
             self.assertTrue(RQCDelayedCall.objects.filter(article=self.active_article, failure_reason=str(response_code), remaining_tries=10).exists())
 

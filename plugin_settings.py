@@ -49,7 +49,6 @@ def install():
             RQCJournalSalt.objects.create(journal=journal, salt=salt)
             logger.info('Set rqc_journal salt to: %s for journal: %s', salt, journal.name)  #TODO From a security standpoint is this ok? Test later.
 
-
 def hook_registry():
     Rqc_adapterPlugin.hook_registry()
     return {
