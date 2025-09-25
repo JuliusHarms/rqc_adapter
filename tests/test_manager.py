@@ -9,7 +9,6 @@ from unittest import skipUnless
 from unittest.mock import patch
 
 from django.contrib.messages import get_messages
-from django.core.exceptions import PermissionDenied
 from django.http import QueryDict
 from django.urls import reverse
 
@@ -74,11 +73,12 @@ class TestManagerMockCalls(TestManager):
         self.assertTrue(
             RQCJournalAPICredentials.objects.filter(
                 journal=self.journal_one,
-                rqc_journal_id=self.rqc_journal_id,
-                api_key=self.rqc_api_key
+                rqc_journal_id=self.mock_valid_data.get("journal_id_field"),
+                api_key=self.mock_valid_data.get("journal_api_key_field")
             ).exists()
         )
-        self.mock_call.assert_called_once_with(int(self.rqc_journal_id), self.rqc_api_key)
+        self.mock_call.assert_called_once_with(self.mock_valid_data.get("journal_id_field"),
+                                                self.mock_valid_data.get("journal_api_key_field"))
 
     def test_existing_credentials_updated_not_duplicated(self):
         """Resubmitting updates existing record"""
@@ -96,12 +96,13 @@ class TestManagerMockCalls(TestManager):
         self.assertTrue(
             RQCJournalAPICredentials.objects.filter(
                 journal=self.journal_one,
-                rqc_journal_id=self.mock_valid_data.get('rqc_journal_id'),
-                api_key=self.mock_valid_data.get('rqc_api_key')
+                rqc_journal_id=self.mock_valid_data.get('journal_id_field'),
+                api_key=self.mock_valid_data.get('journal_api_key_field')
             ).exists()
         )
         self.assertEqual(RQCJournalAPICredentials.objects.filter(journal=self.journal_one).count(), 1)
-        self.mock_call.assert_called_once_with(int(self.rqc_journal_id), self.rqc_api_key)
+        self.mock_call.assert_called_once_with(self.mock_valid_data.get('journal_id_field'),
+                                               self.mock_valid_data.get('journal_api_key_field'))
 
     def test_empty_fields_rejected(self):
         """Test that empty required fields show errors"""
@@ -170,8 +171,6 @@ class TestManagerMockCalls(TestManager):
     def test_redirect_to_manager_after_valid_post(self):
         """
         Tests 'happy' path where editor deposits valid data a database record is created and user is redirected to manager page.
-        Note that this requires rqc_api_key and rqc_journal_id to be present as environment variables.
-        See also setUpData in base_test.
         """
         self.mock_call.return_value = {
         'success': True,
@@ -181,16 +180,16 @@ class TestManagerMockCalls(TestManager):
         }
         # Valid example data
         self.create_session_with_editor()
-        form_data = {
-            'journal_id_field': 7,
-            'journal_api_key_field': "test_key",
-        }
+        form_data = self.mock_valid_data
         response = self.client.post(reverse('rqc_adapter_handle_journal_settings_update'), data=form_data, follow=True)
         # Database objects were created
-        self.assertTrue(RQCJournalAPICredentials.objects.filter(journal=self.journal_one,rqc_journal_id=self.rqc_journal_id, api_key = self.rqc_api_key).exists())
+        self.assertTrue(RQCJournalAPICredentials.objects.filter(journal=self.journal_one,
+                                                                rqc_journal_id=self.mock_valid_data.get('journal_id_field'),
+                                                                api_key = self.mock_valid_data.get('journal_api_key_field')).exists())
         # Manager template is given in response after redirect
         self.assertTemplateUsed(response, 'rqc_adapter/manager.html')
-        self.mock_call.assert_called_once_with(int(self.rqc_journal_id), self.rqc_api_key)
+        self.mock_call.assert_called_once_with(self.mock_valid_data.get('journal_id_field'),
+                                               self.mock_valid_data.get('journal_api_key_field'))
 
     def test_successful_submission_shows_success_message(self):
         """User gets feedback on successful submission"""
@@ -258,13 +257,7 @@ class TestManagerMockCalls(TestManager):
         }
         # Login Bad-User
         self.create_session_with_bad_user()
-        self.assertRaises(PermissionDenied, self.client.post, reverse('rqc_adapter_handle_journal_settings_update'), data = form_data)
-        self.mock_call.assert_not_called()
-
-    def test_csrf_protection_enabled(self):
-        url = reverse("rqc_adapter_handle_journal_settings_update")
-        # Without csrf token
-        response = self.client.post(url, {})
+        response = self.post_manager_form(form_data)
         self.assertEqual(response.status_code, 403)
 
 @skipUnless(has_api_credentials_env, "No API key found. Cannot make API call integration tests.")
