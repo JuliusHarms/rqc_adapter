@@ -23,7 +23,7 @@ from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 logger = get_logger(__name__)
 
 @decorators.has_journal
-@decorators.editor_or_manager
+@decorators.editor_user_required # Also passes staff and journal managers
 def manager(request):
     template = 'rqc_adapter/manager.html'
     journal = request.journal
@@ -43,7 +43,7 @@ def manager(request):
     return render(request, template, {'form': form, 'api_key_set': api_key_set})
 
 @decorators.has_journal
-@decorators.editor_or_manager
+@decorators.editor_user_required
 def handle_journal_settings_update(request):
     if request.method == 'POST':
         template = 'rqc_adapter/manager.html'
@@ -92,7 +92,7 @@ def log_settings_error(journal_name, user_id, error_msg):
 #Other lists (reviews, editor assignments) must be no longer than 20 entries.
 #Attachments cannot be larger than 64 MB each.
 @decorators.has_journal
-@decorators.editor_user_required_and_can_see_pii
+@decorators.editor_user_required
 def submit_article_for_grading(request, article_id):
     referrer = request.META.get('HTTP_REFERER', None)
     mhs_submission_page = referrer if referrer is not None else request.build_absolute_uri(
