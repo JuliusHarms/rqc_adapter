@@ -94,8 +94,8 @@ class RQCAdapterBaseTestCase(TestCase):
 
     def create_session_with_bad_user(self):
         session = self.client.session
-        session['journal'] = self.journal_one
-        session['user'] = self.bad_user
+        session['journal'] = self.journal_one.id
+        session['user'] = self.bad_user.id
         session.save()
         self.client.force_login(self.bad_user)
 
