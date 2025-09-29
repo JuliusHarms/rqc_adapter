@@ -41,6 +41,7 @@ def install():
     update_settings(
         file_path='plugins/rqc_adapter/install/settings.json'
     )
+    #TODO remove?
     journals = Journal.objects.all()
     for journal in journals:
         # Generate Salt Values for all journals
@@ -65,7 +66,8 @@ def hook_registry():
 
 # TODO test out what happens if you request revisions on an article
 def register_for_events():
-    # The RQC API requires an implicit call when the editorial decision is changed
+    # The RQC API requires an implicit call when the editorial decision
+    # for an article is changed
     events_logic.Events.register_for_event(
         Events.ON_ARTICLE_ACCEPTED,
         implicit_call_mhs_submission,

@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 
 from django.conf import settings
 
-from core.models import SettingValue
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCJournalSalt
 from review.models import RevisionRequest
 
@@ -81,7 +80,6 @@ def create_pseudo_address(email, salt):
     hash_hex = hash_obj.hexdigest()
     pseudo_address = hash_hex + "@example.edu"
     return pseudo_address
-
 
 def generate_random_salt(length=12):
     """
