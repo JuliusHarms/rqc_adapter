@@ -2,7 +2,7 @@
 
 **Created:** 2025, Julius Harms, Freie Universität Berlin
 
-**Version:** 22.09.2025  
+Version: 22.09.2025. This plugin is in development and is not an official plugin by the RQC initiative.
 
 ## 1. What It Is
 
@@ -48,6 +48,12 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
 
 ### 3.2 Journal Setup
 
+It is strongly recommended that you disable one-click-access when using the RQC
+Plugin. Review data from reviewers that are not logged in can not be sent to RQC due
+privacy reasons. If you have one-click-access enabled many reviews will not be sent to RQC defeating
+the purpose of using the plugin!
+
+### 3.3 Daily use
 1. Navigate to the Plugin Management page in the navigation pane
 2. Select **RQC Adapter**
 3. Fill out the form with the `Journal ID` and `API Key` provided by RQC

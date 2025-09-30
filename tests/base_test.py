@@ -36,6 +36,12 @@ class RQCAdapterBaseTestCase(TestCase):
     OPT_OUT = RQCReviewerOptingDecision.OptingChoices.OPT_OUT
     UNDEFINED = RQCReviewerOptingDecision.OptingChoices.UNDEFINED
 
+    @staticmethod
+    def assign_dates_to_review_assignment(review_assignment, delta_weeks_requested , delta_days_accepted):
+        review_assignment.date_requested = datetime.now(timezone.utc) - timedelta(weeks=delta_weeks_requested)
+        review_assignment.date_accepted = datetime.now(timezone.utc) - timedelta(days=delta_days_accepted)
+        review_assignment.date_complete = datetime.now(timezone.utc)
+
     @classmethod
     def create_author(cls, journal, email):
         author = helpers.create_user(
@@ -61,7 +67,9 @@ class RQCAdapterBaseTestCase(TestCase):
     @classmethod
     def create_reviewer_opting_decision_for_ReviewAssignment(cls, review_assignment,
                                                              opting_status=RQCReviewerOptingDecision.OptingChoices.OPT_IN):
-        opting_for_review_assignment = RQCReviewerOptingDecisionForReviewAssignment.objects.create(review_assignment=review_assignment,                                                                                              opting_status=opting_status)
+        opting_for_review_assignment = (RQCReviewerOptingDecisionForReviewAssignment.objects.
+                                        create(review_assignment=review_assignment,
+                                               opting_status=opting_status))
         return opting_for_review_assignment
 
     @classmethod
@@ -92,6 +100,13 @@ class RQCAdapterBaseTestCase(TestCase):
         session['user'] = self.editor.id
         session.save()
 
+    def create_session_with_bad_user(self):
+        session = self.client.session
+        session['journal'] = self.journal_one.id
+        session['user'] = self.bad_user.id
+        session.save()
+        self.client.force_login(self.bad_user)
+
     def create_session_with_editor(self):
         self.login_editor()
         self.create_session()
@@ -113,12 +128,33 @@ class RQCAdapterBaseTestCase(TestCase):
 
         helpers.create_roles(roles_to_setup)
 
+        # Create Editor
         cls.editor = helpers.create_editor(cls.journal_one)
         cls.editor.last_name = "One"
         cls.editor.first_name = "Editor"
         cls.editor.save()
 
+        # Create Section Editor
+        cls.section_editor = helpers.create_section_editor(cls.journal_one)
+        cls.section_editor.last_name = "Section Editor"
+        cls.section_editor.first_name = "One"
+        cls.section_editor.save()
+
+        # Create editor will be "Chief Editor" i.e. not handling and not Section Editor
+        cls.chief_editor = helpers.create_editor(cls.journal_one, **{'email': 'chief_editor@example.com'})
+        cls.chief_editor.last_name = "One"
+        cls.chief_editor.first_name = "Chief Editor"
+        cls.chief_editor.save()
+
+        # Create editor that will not be associated with article (no assignment, not in section)
+        cls.other_editor = helpers.create_editor(cls.journal_one, **{'email': 'other_editor@example.com'})
+        cls.other_editor.last_name = "One"
+        cls.other_editor.first_name = "Other Editor"
+        cls.other_editor.save()
+
+        # Create use without roles
         cls.bad_user = helpers.create_second_user(cls.journal_one)
+
         # Set-Up author
         cls.author = helpers.create_author(cls.journal_one)
 
@@ -133,6 +169,11 @@ class RQCAdapterBaseTestCase(TestCase):
         cls.active_article.authors.add(cls.author)
         cls.active_article.save()
 
+        # Add section editor to article section
+        cls.active_article.section.section_editors.add(cls.section_editor)
+        cls.active_article.section.editors.add(cls.chief_editor)
+        cls.journal_one.save()
+
         # Create Reviewer 1
         cls.reviewer_one = helpers.create_peer_reviewer(cls.journal_one)
         cls.reviewer_one.is_active = True
@@ -141,6 +182,14 @@ class RQCAdapterBaseTestCase(TestCase):
         cls.reviewer_one.first_name = "Reviewer"
         cls.reviewer_one.last_name = "One"
         cls.reviewer_one.save()
+
+        # Create Reviewer 2
+        cls.reviewer_two = helpers.create_peer_reviewer(cls.journal_one)
+        cls.reviewer_two.is_active = True
+        cls.add_role_to_user(cls.reviewer_two, 'reviewer', cls.journal_one)
+        cls.reviewer_two.first_name = "Reviewer"
+        cls.reviewer_two.last_name = "Two"
+        cls.reviewer_two.save()
 
         # Give editor an EditorAssigment for active_article
         cls.editor_assignment = helpers.create_editor_assignment(
@@ -158,15 +207,28 @@ class RQCAdapterBaseTestCase(TestCase):
             reviewer=cls.reviewer_one,
             editor= cls.editor,
             due_date=datetime.now(timezone.utc) + timedelta(weeks=2))
-        cls.review_assignment.date_requested = datetime.now(timezone.utc) - timedelta(weeks=2)
-        cls.review_assignment.date_accepted = datetime.now(timezone.utc) - timedelta(days=2)
-        cls.review_assignment.date_complete = datetime.now(timezone.utc)
+        cls.assign_dates_to_review_assignment(cls.review_assignment, 2, 2)
+
         # Create review answer
         review.models.ReviewAssignmentAnswer.objects.create(assignment=cls.review_assignment,
                                                                    answer="<p>Test Answer<p>"
                                                                     )
         cls.review_assignment.save()
 
+        # Create Review Assignment 2
+        cls.review_assignment_two = helpers.create_review_assignment(
+            journal=cls.journal_one,
+            article=cls.active_article,
+            reviewer=cls.reviewer_two,
+            editor= cls.editor,
+            due_date=datetime.now(timezone.utc) + timedelta(weeks=2),
+            review_round=cls.review_assignment.review_round)
+        cls.assign_dates_to_review_assignment(cls.review_assignment, 1, 1)
+
+        # Create review answer
+        review.models.ReviewAssignmentAnswer.objects.create(assignment=cls.review_assignment_two,
+                                                                   answer="<p>Test Answer 2<p>"
+                                                                    )
         # Set-Up API credentials for live calls:
         cls.rqc_api_key = os.environ.get('RQC_API_KEY', None)
         cls.rqc_journal_id = os.environ.get('RQC_JOURNAL_ID', None)
