@@ -114,19 +114,25 @@ def get_editors_info(article):
     # One editor may appear multiple times in each role.
     editor_assignments = article.editorassignment_set.order_by('-assigned')
 
+    # We remember which editors we added as level one editors in order to not add them twice
+    level_one_editors = []
+
     # Editors assigned to the article will be treated as handling editors by RQC.
     # Editors that aren't assigned to the article but to the section of the article
     # will be added to the assignment set so that they can grade the article reviews as well.
     for editor_assignment in editor_assignments:
         edassgmt_set.append(get_editor_info(editor_assignment.editor, 1))
+        level_one_editors.append(editor_assignment.editor)
 
     section = article.section
     if section is not None:
         for section_editor in section.section_editors.all():
-            edassgmt_set.append(get_editor_info(section_editor, 2))
+            if section_editor not in level_one_editors:
+                edassgmt_set.append(get_editor_info(section_editor, 2))
 
         for editor in section.editors.all():
-            edassgmt_set.append(get_editor_info(editor, 3))
+            if editor not in level_one_editors:
+                edassgmt_set.append(get_editor_info(editor, 3))
 
     return edassgmt_set[:MAX_LIST_LENGTH]
 
@@ -165,7 +171,7 @@ def get_reviews_info(article, journal):
             date_declined__isnull=False, # Assignment was declined but only after data has been sent to RQC
             rqcrevieweroptingdecisionforreviewassignment__sent_to_rqc=True
         )
-    ).order_by("date_requested")
+    ).order_by("date_requested")  # To create a persistent ordering. Careful date_accepted gets deleted!
     review_num = 1
     for review_assignment in review_assignments:
         reviewer = review_assignment.reviewer
