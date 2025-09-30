@@ -52,6 +52,11 @@ https://reviewqualitycollector.org/t/api.
 
 ### 3.2 Journal setup
 
+It is strongly recommended that you disable one-click-access when using the RQC
+Plugin. Review data from reviewers that are not logged in can not be sent to RQC due
+privacy reasons. If you have one-click-access enabled many reviews will not be sent to RQC defeating
+the purpose of using the plugin!
+
 ### 3.3 Daily use
 
 ## 4. How Janeway concepts are mapped to RQC concepts
