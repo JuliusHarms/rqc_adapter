@@ -60,7 +60,7 @@ def create_review_assignment_opting_decision(**kwargs):
     :param kwargs: Contains ReviewAssignment object
     """
     review_assignment = kwargs.get("review_assignment")
-    journal = review_assignment.journal
+    journal = review_assignment.article.journal
     # Don't create Review Assignment Opting Decisions if no API credentials are present
     try:
         RQCJournalAPICredentials.objects.get(journal=journal)
