@@ -62,3 +62,5 @@ the purpose of using the plugin!
 ## 4. How Janeway concepts are mapped to RQC concepts
 
 ## 5. Limitations
+
+Attachments uploaded by reviewers are not yet transmitted to RQC.
