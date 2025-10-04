@@ -176,10 +176,10 @@ def set_reviewer_opting_status(request):
             # via a hidden input field in the form.
             access_code = logic.get_access_code(request)
             if access_code is None:
-                access_code = request.POST.get('access_code')
-
+                access_code = request.POST.get('access_code', None)
             try:
-                if access_code:
+                if access_code is not None:
+                    print("access_code is none")
                     assignment = ReviewAssignment.objects.get(
                         Q(pk=assignment_id)
                         & Q(is_complete=False)
