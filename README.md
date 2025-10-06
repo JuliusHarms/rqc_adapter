@@ -35,6 +35,9 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
    ```
 3. Run the Janeway command for required migrations:
    ```bash
+   python3 manage.py makemigrations
+   ```
+   ```bash
    python3 manage.py migrate
    ```
 4. Install the cronjob:
@@ -44,6 +47,7 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
    - Make sure you have cron and crontab installed
    - You can customize the time at which the cronjob will run by adding the `--time` argument with a number between 0-23 (default is 8 for 8am)
    - Example: `python3 manage.py rqc_install_cronjob --action install --time 10`
+   - You need to make sure python is available to cron.
 5. Restart your server (Apache, Passenger, etc)
 
 ### 3.2 Journal Setup
@@ -66,9 +70,10 @@ You will then be told if the given credentials could be validated by the RQC ser
 
 RQC distinguishes between level 1, 2 and 3 editors. This is mapped to Janeway's editor types in the following way:
 
-- **Level 1 editors:** Editors or section editors that are assigned to the submission
-- **Level 2:** Section editors belonging to the section the article is in
-- **Level 3:** Editors that belong to the section the article is in
+  **Level 1 editors:** Section editors that are assigned to the submission
+  **Level 2:** Currently no roles in Janeway get labeled as level 2 editors.
+  **Level 3:** Editors that are assigned to the submission or that are involved in grading the submission 
+   via DraftDecisions
 
 Which editors are contacted for grading by RQC and when can be set on the RQC website.
 
@@ -82,7 +87,7 @@ Janeway's "Conditional Accept" is transmitted to RQC as a minor revision request
 
 Attachments uploaded by reviewers are not yet transmitted to RQC.
 
-Currently Janeway does not fire the `ON_REVISIONS_REQUESTED` event which means the plugin cannot send a call to RQC when revisions are requested. As a workaround, the plugin currently sends calls when the `ON_REVISIONS_REQUESTED_NOTIFY` event is fired.
+Currently Janeway does not fire the `ON_REVISIONS_REQUESTED` event which means the plugin cannot send a call to RQC when revisions are requested.
 
 ## 6. Current Implementation Status
 
