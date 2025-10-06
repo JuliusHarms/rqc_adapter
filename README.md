@@ -89,6 +89,9 @@ Attachments uploaded by reviewers are not yet transmitted to RQC.
 
 Currently Janeway does not fire the `ON_REVISIONS_REQUESTED` event which means the plugin cannot send a call to RQC when revisions are requested.
 
+The `rqc_install_cronjob` command does not function as intended. Depending on your cron 
+setup the cron job might not be able to execute.
+
 ## 6. Current Implementation Status
 
 The plugin is currently still in development.
