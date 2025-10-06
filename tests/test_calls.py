@@ -20,7 +20,8 @@ from plugins.rqc_adapter.rqc_calls import RQCErrorCodes
 from plugins.rqc_adapter.tests.base_test import RQCAdapterBaseTestCase
 from django.urls import reverse
 
-from review.models import RevisionRequest
+from plugins.rqc_adapter.utils import utc_now
+from review.models import RevisionRequest, DecisionDraft
 from utils.testing import helpers
 
 has_api_credentials_env = os.getenv("RQC_API_KEY") and os.getenv("RQC_JOURNAL_ID")
@@ -52,6 +53,8 @@ class TestCallsToMHSSubmissionEndpoint(RQCAdapterBaseTestCase):
 
 class TestCallsToMHSSubmissionEndpointMocked(TestCallsToMHSSubmissionEndpoint):
 
+    request_revisions_view = 'review_request_revisions'
+
     @staticmethod
     def create_mock_call_return_value(success=True,
                                       http_status_code=200,
@@ -68,6 +71,16 @@ class TestCallsToMHSSubmissionEndpointMocked(TestCallsToMHSSubmissionEndpoint):
         self.mock_call.assert_called()
         args, kwargs = self.mock_call.call_args
         return args, kwargs
+
+    def make_revision_request(self, revision_type):
+        """Makes a call to the request_revisions view with form data"""
+        form_data = {
+            "date_due": (timezone.now() + timedelta(days=7)).date(),
+            "type": revision_type,
+            "editor_note": "Please fix these issues",
+        }
+        self.client.post(reverse(self.request_revisions_view, args=[self.active_article.id]), form_data)
+
 
     def setUp(self):
         super().setUp()
@@ -118,21 +131,13 @@ class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         post_data = kwargs.get('post_data')
         edassgmt_set = post_data.get('edassgmt_set')
 
-        # Editor 4 should not be in the set
-        self.assertEqual(3, len(edassgmt_set))
+        # Only assigned editor should be in the set
+        self.assertEqual(1, len(edassgmt_set))
 
-        # First editor should be level one
+        # First editor should be level one even if it's an editor and not a section editor
         editor_one = edassgmt_set[0]
-        editor_two = edassgmt_set[1] # Should be section editor
-        editor_three = edassgmt_set[2] # Should be chief editor
         self.assertEqual(self.editor.email, editor_one.get('email'))
         self.assertEqual(1, editor_one.get('level'))
-
-        self.assertEqual(self.section_editor.email, editor_two.get('email'))
-        self.assertEqual(2, editor_two.get('level'))
-
-        self.assertEqual(self.chief_editor.email, editor_three.get('email'))
-        self.assertEqual(3, editor_three.get('level'))
 
     @staticmethod
     def fake_create_call_record(response, article, use_post, post_data):
@@ -149,7 +154,7 @@ class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         args, kwargs = self.call_and_get_args_back()
         post_data = kwargs.get('post_data')
         edassgmt_set_one = post_data.get('edassgmt_set')
-        self.assertEqual(3, len(edassgmt_set_one))
+        self.assertEqual(1, len(edassgmt_set_one))
         helpers.create_editor_assignment(
                                             self.active_article,
                                             self.other_editor,
@@ -161,14 +166,70 @@ class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         args, kwargs = self.call_and_get_args_back()
         post_data = kwargs.get('post_data')
         edassgmt_set_two = post_data.get('edassgmt_set')
-        self.assertEqual(3, len(edassgmt_set_two))
+        self.assertEqual(1, len(edassgmt_set_two))
         for idx, editor in enumerate(edassgmt_set_two):
             self.assertEqual(editor.get('email'), edassgmt_set_one[idx].get('email'))
+
+    def test_editor_assignment_with_draft_decision(self):
+        """Tests that editor assignments don't change on subsequent calls."""
+        from review.const import EditorialDecisions
+        self.opt_in_reviewer_one()
+        editor_assignment = helpers.create_editor_assignment(
+            self.active_article,
+            self.section_editor,
+            assignment_type='section_editor'
+        )
+        editor_assignment.assigned = utc_now()
+        DecisionDraft.objects.create(editor=self.chief_editor,
+                                     article=self.active_article,
+                                     section_editor=self.section_editor,
+                                     decision=EditorialDecisions.ACCEPT.value,
+                                     editor_decision = EditorialDecisions.ACCEPT.value,)
+        # self.editor should not be duplicated in edassgmt_set!
+        # Even if the editor appears again in a draft decision
+        DecisionDraft.objects.create(editor=self.editor,
+                                     article=self.active_article,
+                                     section_editor=self.section_editor,
+                                     decision=EditorialDecisions.ACCEPT.value,
+                                     editor_decision = EditorialDecisions.ACCEPT.value,)
+        args, kwargs = self.call_and_get_args_back()
+        post_data = kwargs.get('post_data')
+        edassgmt_set_one = post_data.get('edassgmt_set')
+        self.assertEqual(3, len(edassgmt_set_one))
+        editor = edassgmt_set_one[0]
+        section_editor = edassgmt_set_one[1]
+        chief_editor = edassgmt_set_one[2]
+        self.assertTrue(self.editor.email, editor.get('email'))
+        self.assertTrue(3, editor.get('level'))
+
+        self.assertTrue(self.section_editor.email, section_editor.get('email'))
+        self.assertTrue(1, editor.get('level'))
+
+        self.assertTrue(self.chief_editor.email, chief_editor.get('email'))
+        self.assertTrue(3, editor.get('level'))
+
+    def test_revision_type_mapped_correctly(self):
+        """Tests mapping of Janeway to RQC decision types"""
+        revision_types = ["minor_revisions", "major_revisions", "conditional_accept"]
+        for revision_type in revision_types:
+            self.make_revision_request(revision_type)
+            # Article has successfully been put under revision
+            self.assertTrue(self.active_article.is_under_revision())
+            revision_request = RevisionRequest.objects.filter(article=self.active_article).order_by('-date_requested').first()
+            self.active_article.is_accepted = False
+            self.active_article.date_declined = None
+            self.active_article.save()
+            args, kwargs = self.call_and_get_args_back()
+            post_data = kwargs.get('post_data')
+            editorial_decision = post_data.get('decision')
+            if revision_type == 'minor_revisions' or revision_type == 'conditional_accept':
+                self.assertEqual(editorial_decision, 'MINORREVISION')
+            else:
+                self.assertEqual(editorial_decision, 'MAJORREVISION')
 
 class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
     make_editorial_decision_view = 'review_decision'
-    request_revisions_view = 'review_request_revisions'
 
     def make_editorial_decision(self, decision):
         """Makes a call to the review_decision view with form data."""
@@ -178,15 +239,6 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
             "body": "Test",
         }
         self.client.post(reverse(self.make_editorial_decision_view, args=[self.active_article.id, decision]), form_data)
-
-    def make_revision_request(self, revision_type):
-        """Makes a call to the request_revisions view with form data"""
-        form_data = {
-            "date_due": (timezone.now() + timedelta(days=7)).date(),
-            "type": revision_type,
-            "editor_note": "Please fix these issues",
-        }
-        self.client.post(reverse(self.request_revisions_view, args=[self.active_article.id]), form_data)
 
     def test_implicit_calls_with_article_argument(self):
         """Just tests if implicit_call_mhs_submission function call results in a call to RQC"""
@@ -206,7 +258,8 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         implicit_call_mhs_submission(**kwargs)
         self.mock_call.assert_called()
         args, kwargs = self.mock_call.call_args
-        self.assertEqual(kwargs['interactive_user'], None)
+        post_data = kwargs.get('post_data')
+        self.assertEqual(post_data.get('interactive_user'), '')
 
     def test_implicit_calls_with_revisions_argument(self):
         """Tests if the implicit calls function works with a revision request object in kwargs"""
@@ -233,7 +286,8 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
     # TODO currently should not work due to the ON_REVISIONS_REQUESTED event not firing
     def test_implicit_call_made_upon_revisions_requested(self):
-        revision_types = ["minor_revisions", "major_revisions", "conditional_acceptance"]
+        """Tests if implicit calls are made upon revisions requested"""
+        revision_types = ["minor_revisions", "major_revisions", "conditional_accept"]
         for revision_type in revision_types:
             self.make_revision_request(revision_type)
             self.assertTrue(
@@ -283,7 +337,48 @@ class TestDelayedCalls(TestCallsToMHSSubmissionEndpointMocked):
         mock_job.setall.assert_called_once_with("0 8 * * *")
         mock_tab.write.assert_called_once()
 
-# Integration with RQC API
+    def test_successful_delayed_call_deletes_entry(self):
+        """If delayed call succeeds, it should be deleted from DB."""
+        # Create delayed call
+        delayed_call = RQCDelayedCall.objects.create(
+            article=self.active_article,
+            failure_reason="500",
+            remaining_tries=10,
+            last_attempt_at=utc_now() - timedelta(hours=25),
+        )
+        # Simulate successful API response
+        self.mock_call.return_value = {"success": True}
+        call_command("rqc_make_delayed_calls")
+        self.assertFalse(RQCDelayedCall.objects.filter(pk=delayed_call.pk).exists())
+
+    def test_failed_delayed_call_updates_remaining_tries(self):
+        """If delayed call fails, it should decrement remaining_tries and not delete."""
+        delayed_call = RQCDelayedCall.objects.create(
+            article=self.active_article,
+            failure_reason="500",
+            remaining_tries=5,
+            last_attempt_at=utc_now() - timedelta(hours=25),
+        )
+
+        # Simulate failed API response
+        self.mock_call.return_value = {"success": False}
+        call_command("rqc_make_delayed_calls")
+        delayed_call.refresh_from_db()
+        # Decremented by one
+        self.assertEqual(delayed_call.remaining_tries, 4)
+        self.assertTrue(RQCDelayedCall.objects.filter(pk=delayed_call.pk).exists())
+
+    def test_invalid_delayed_call_is_deleted(self):
+        """If delayed call has no tries left, it should be deleted without API call."""
+        delayed_call = RQCDelayedCall.objects.create(
+            article=self.active_article,
+            failure_reason="500",
+            remaining_tries=0,
+            last_attempt_at=utc_now() - timedelta(hours=25),
+        )
+        call_command("rqc_make_delayed_calls")
+        self.assertFalse(RQCDelayedCall.objects.filter(pk=delayed_call.pk).exists())
+
 @skipUnless(has_api_credentials_env, "No API key found. Cannot make API call integration tests.")
 class TestSubmissionCallsAPIIntegration(TestCallsToMHSSubmissionEndpoint):
     def setUp(self):

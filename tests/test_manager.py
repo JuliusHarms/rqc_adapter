@@ -263,20 +263,28 @@ class TestManagerMockCalls(TestManager):
 @skipUnless(has_api_credentials_env, "No API key found. Cannot make API call integration tests.")
 class TestManagerAPIIntegration(TestManager):
     def test_api_credentials_accepted(self):
-        """Form validates credentials with actual RQC API"""
+        """Form validates credentials successfully with RQC API"""
         self.create_session_with_editor()
         form_data = {
             'journal_id_field': self.rqc_journal_id,
             'journal_api_key_field': self.rqc_api_key,
         }
         response = self.client.post(reverse('rqc_adapter_handle_journal_settings_update'), data=form_data)
-        form = response.context['form']
-        self.assertTrue(form.is_valid())
-        # Redirect after post
+        # Redirect after valid post
         self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('rqc_adapter_manager'))
+        self.assertTrue(
+            RQCJournalAPICredentials.objects.filter(
+                journal=self.journal_one,
+                rqc_journal_id=self.rqc_journal_id,
+                api_key=self.rqc_api_key
+            ).exists()
+        )
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn("RQC settings updated successfully.", [m.message for m in messages])
 
     def test_api_credentials_rejected(self):
-        """Invalid credentials are rejected'"""
+        """Invalid credentials are rejected by RQC API'"""
         self.create_session_with_editor()
         form_data = {
             'journal_id_field': self.rqc_journal_id,
@@ -284,6 +292,12 @@ class TestManagerAPIIntegration(TestManager):
         }
         response = self.client.post(reverse('rqc_adapter_handle_journal_settings_update'), data=form_data)
         self.assertFalse(RQCJournalAPICredentials.objects.filter(journal=self.journal_one).exists())
-        # No redirect after post
+        # No redirect after invalid post
         self.assertNotEqual(response.status_code, 302)
-
+        self.assertFalse(
+            RQCJournalAPICredentials.objects.filter(
+                journal=self.journal_one,
+                rqc_journal_id=self.rqc_journal_id,
+                api_key=self.rqc_api_key
+            ).exists()
+        )

@@ -36,7 +36,7 @@ class Command(BaseCommand):
         :param options: None
         :return: None
         """
-        queue = RQCDelayedCall.objects.filter(last_attempt_at__gte=utc_now()+timedelta(hours=24)).order_by('-last_attempt_at')
+        queue = RQCDelayedCall.objects.all().order_by('-last_attempt_at')
         for call in queue:
             if call.is_valid:
                 article = call.article
@@ -52,10 +52,13 @@ class Command(BaseCommand):
                 logger.info(f"Delayed call to RQC was attempted for article {article_id}:{article.title}.")
                 call.remaining_tries = call.remaining_tries - 1
                 if not response['success']:
+                    logger.info(f"Delayed call to RQC failed for article {article_id}:{article.title}.")
                     call.last_attempt_at = utc_now()
+                    call.save()
                     # If a call is unsuccessful we should stop trying for the day.
                     return
                 else:
+                    logger.info(f"Delayed call to RQC succeeded for article {article_id}:{article.title}.")
                     call.delete()
             else:
                 call.delete()

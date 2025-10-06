@@ -21,7 +21,7 @@ class RQCReviewerOptingDecision(models.Model):
     opting_date = models.DateTimeField(auto_now_add=True, null=False, blank=False)
     reviewer = models.ForeignKey(Account, null=False, blank=False, on_delete=models.CASCADE)
     journal = models.ForeignKey(Journal, null=False, blank=False, on_delete=models.CASCADE)
-
+    #TODO Add unique constraint for year of opting date, reviewer and journal
     @property
     def is_valid(self):
         """
@@ -43,6 +43,7 @@ class RQCReviewerOptingDecisionForReviewAssignment(models.Model):
     opting_status = models.IntegerField(choices=RQCReviewerOptingDecision.OptingChoices.choices, null=False, blank=False, default=RQCReviewerOptingDecision.OptingChoices.UNDEFINED)
     review_assignment = models.OneToOneField(ReviewAssignment, null=False, blank=False, on_delete=models.CASCADE)
     sent_to_rqc = models.BooleanField(default=False)
+    decision_record = models.ForeignKey(RQCReviewerOptingDecision, null=True, blank=False, on_delete=models.CASCADE)
 
     @property
     def is_frozen(self):

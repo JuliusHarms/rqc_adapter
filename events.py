@@ -6,7 +6,8 @@ This file contains the functions that are registered for events in plugin_settin
 from utils.logger import get_logger
 
 from plugins.rqc_adapter.utils import utc_now
-from plugins.rqc_adapter.models import RQCJournalAPICredentials, RQCReviewerOptingDecision
+from plugins.rqc_adapter.models import RQCJournalAPICredentials, RQCReviewerOptingDecision, \
+    RQCReviewerOptingDecisionForReviewAssignment
 from plugins.rqc_adapter.rqc_calls import call_mhs_submission
 from plugins.rqc_adapter.submission_data_retrieval import fetch_post_data
 
@@ -77,11 +78,13 @@ def create_review_assignment_opting_decision(**kwargs):
         # Create with default sent_to_rqc = False
         if decision is not None:
             opting_status = decision.opting_status
-            RQCReviewerOptingDecision.objects.get_or_create(review_assignment=review_assignment,
-                                                            opting_status=opting_status)
+            RQCReviewerOptingDecisionForReviewAssignment.objects.get_or_create(review_assignment=review_assignment,
+                                                            opting_status=opting_status,
+                                                            # Save decision for auditing purposes
+                                                            decision_record=decision)
         else:
             # Create with default status of undefined
-            RQCReviewerOptingDecision.objects.get_or_create(review_assignment=review_assignment)
+            RQCReviewerOptingDecisionForReviewAssignment.objects.get_or_create(review_assignment=review_assignment)
     except Exception as e:
         logger.error(f'Could not create RQC opting decision for review assignment: {e}')
         return None

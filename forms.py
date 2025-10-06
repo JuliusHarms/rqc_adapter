@@ -1,5 +1,7 @@
 """
 © Julius Harms, Freie Universität Berlin 2025
+
+The forms used by the plugin are defined here.
 """
 from django import forms
 from django.core.validators import RegexValidator

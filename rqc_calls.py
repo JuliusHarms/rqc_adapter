@@ -89,6 +89,7 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
             'X-Rqc-Time': convert_date_to_rqc_format(),
             'Authorization': f'Bearer {api_key}',
         }
+        logger.debug("POST data to RQC %s:\n%s", url, json.dumps(post_data, indent=2, ensure_ascii=False))
         if use_post:
             headers['Content-Type'] = 'application/json'
             response = requests.post(
@@ -122,7 +123,6 @@ def call_rqc_api(url: str, api_key: str, use_post=False, post_data=None, article
             RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
                 review_assignment__article=article, review_assignment__date_declined__isnull=True
             ).update(sent_to_rqc=True)
-        print("RQC response raw:", response.text) # TODO remove
         if response.status_code == 200 and use_post:
             log_call_result(result)
             return result

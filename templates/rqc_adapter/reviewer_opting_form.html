@@ -1,5 +1,7 @@
 <!--
 © Julius Harms, Freie Universität Berlin 2025
+
+This template renders the form where reviewers can opt in or out from RQC.
 -->
 
 <div class="title-area" id="rqc_opting_form_title">
@@ -42,7 +44,9 @@
     <form method="POST" id="rqc_opting_form" action= "{% url 'rqc_adapter_set_reviewer_opting_status' %}">
         {% csrf_token %}
         <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
-        <input type="hidden" name="access_code" value="{{ access_code }}">
+        {% if access_code %}
+            <input type="hidden" name="access_code" value="{{ access_code }}">
+        {% endif %}
         {{ form.status_selection_field }}
         {{ form.status_selection_field.errors }}
          <button type="submit" class="button success">Submit Decision</button>

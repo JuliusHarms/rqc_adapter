@@ -62,7 +62,7 @@ def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = 
 
     submission_data['review_set'] = get_reviews_info(article, journal)
 
-    submission_data['decision'] = get_editorial_decision(article)  # TODO redo revision request by querying for revisionrequest objects -> prob fine but add test for it
+    submission_data['decision'] = get_editorial_decision(article)
     return submission_data
 
 
@@ -112,28 +112,59 @@ def get_editors_info(article):
     # RQC distinguishes between three levels of editors.
     # 1 - handling editor, 2 - section editor, 3 - chief editor
     # One editor may appear multiple times in each role.
+    # In order to avoid adding one editor with the same level twice
+    # we remember the editors email + the level
+    # (same editor with different level is allowed)
+    seen = set()
+    has_level_one_editor = False
+
+    # Editors that are assigned to the submission are given level 3
+    # Assigned section editors get level 1
     editor_assignments = article.editorassignment_set.order_by('-assigned')
-
-    # We remember which editors we added as level one editors in order to not add them twice
-    level_one_editors = []
-
-    # Editors assigned to the article will be treated as handling editors by RQC.
-    # Editors that aren't assigned to the article but to the section of the article
-    # will be added to the assignment set so that they can grade the article reviews as well.
     for editor_assignment in editor_assignments:
-        edassgmt_set.append(get_editor_info(editor_assignment.editor, 1))
-        level_one_editors.append(editor_assignment.editor)
+        if editor_assignment.editor_type == 'editor':
+            info = get_editor_info(editor_assignment.editor, 3)
+        else:
+            info = get_editor_info(editor_assignment.editor, 1)
+            has_level_one_editor = True
 
-    section = article.section
-    if section is not None:
-        for section_editor in section.section_editors.all():
-            if section_editor not in level_one_editors:
-                edassgmt_set.append(get_editor_info(section_editor, 2))
+        key = (info['email'], info['level'])
+        if key not in seen:
+            seen.add(key)
+            edassgmt_set.append(info)
 
-        for editor in section.editors.all():
-            if editor not in level_one_editors:
-                edassgmt_set.append(get_editor_info(editor, 3))
+    # If an editor was involved in reviewing a decision draft then that
+    # editor is also associated with the submission and will be included.
+    decision_drafts = article.decisiondraft_set.all()
+    for draft in decision_drafts:
+        # All section editors should be already included.
+        # This is just here to be very safe incase the constraint that
+        # a section editor has to be assigned in order to make a
+        # draft decision for an article is not enforced.
+        if draft.section_editor:
+            info = get_editor_info(draft.section_editor, 1)
+            key = (info['email'], info['level'])
+            if key not in seen:
+                seen.add(key)
+                edassgmt_set.append(info)
+                has_level_one_editor = True
 
+        # Draft decision can be sent to chief editors even if they aren't assigned to the submission
+        # Since they are involved in making the editorial decision they should be included.
+        if draft.editor:
+            info = get_editor_info(draft.editor, 3)
+            key = (info['email'], info['level'])
+            if key not in seen:
+                seen.add(key)
+                edassgmt_set.append(info)
+
+    # If there is no level 1 editor we force any one of the assigned editors to be level 1
+    # because the RQC API requires one level one editor.
+    if not has_level_one_editor and edassgmt_set:
+        edassgmt_set[0]['level'] = 1
+
+    # The assignment set gets sorted to avoid cutting off level 1 editors.
+    edassgmt_set.sort(key=lambda x: x['level'])
     return edassgmt_set[:MAX_LIST_LENGTH]
 
 def get_editor_info(editor, level):
@@ -199,7 +230,10 @@ def get_reviews_info(article, journal):
         }
         review_set.append(review_data)
         review_num = review_num + 1
-    logging.info(f"RQC Call: Number of reviews exceeded {MAX_LIST_LENGTH}. {len(review_set)-MAX_LIST_LENGTH} reviews were not included in the call. Entire review_set: {review_set}")
+        # Log reviews that are cut off. Reviews are holy so this might be relevant.
+        # TODO Should something happen with the reviews that were cut off?
+    if len(review_set) > 20:
+        logging.info(f"RQC Call: Number of reviews exceeded {MAX_LIST_LENGTH}. {len(review_set)-MAX_LIST_LENGTH} reviews were not included in the call. Entire review_set: {review_set}")
     return review_set[:MAX_LIST_LENGTH]
 
 def has_opted_in(review_assignment):
@@ -250,7 +284,7 @@ def get_attachment(article, review_file):
     :return: list of dicts {filename: str, data: str}
     """
     attachment_set = []
-    # File size should me no larger than 64mb
+    # File size should be no larger than 64mb
     if review_file is not None and not review_file.is_remote and review_file.get_file_size(article) <= 67108864:
         attachment_set.append({
             'filename': review_file.original_filename,
