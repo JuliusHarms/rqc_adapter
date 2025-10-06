@@ -40,9 +40,6 @@ class Rqc_adapterPlugin(plugins.Plugin):
 
 def install():
     Rqc_adapterPlugin.install()
-    update_settings(
-        file_path='plugins/rqc_adapter/install/settings.json'
-    )
 
 def hook_registry():
     Rqc_adapterPlugin.hook_registry()
