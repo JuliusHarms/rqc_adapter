@@ -230,7 +230,10 @@ def get_reviews_info(article, journal):
         }
         review_set.append(review_data)
         review_num = review_num + 1
-    logging.info(f"RQC Call: Number of reviews exceeded {MAX_LIST_LENGTH}. {len(review_set)-MAX_LIST_LENGTH} reviews were not included in the call. Entire review_set: {review_set}")
+        # Log reviews that are cut off. Reviews are holy so this might be relevant.
+        # TODO Should something happen with the reviews that were cut off?
+    if len(review_set) > 20:
+        logging.info(f"RQC Call: Number of reviews exceeded {MAX_LIST_LENGTH}. {len(review_set)-MAX_LIST_LENGTH} reviews were not included in the call. Entire review_set: {review_set}")
     return review_set[:MAX_LIST_LENGTH]
 
 def has_opted_in(review_assignment):

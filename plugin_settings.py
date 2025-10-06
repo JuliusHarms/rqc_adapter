@@ -23,6 +23,8 @@ JANEWAY_VERSION = "1.8.0"
 
 logger = get_logger(__name__)
 
+#TODO add logging to CRON if CRON fails
+
 class Rqc_adapterPlugin(plugins.Plugin):
     plugin_name = PLUGIN_NAME
     display_name = DISPLAY_NAME
@@ -41,14 +43,6 @@ def install():
     update_settings(
         file_path='plugins/rqc_adapter/install/settings.json'
     )
-    #TODO remove?
-    journals = Journal.objects.all()
-    for journal in journals:
-        # Generate Salt Values for all journals
-        if not RQCJournalSalt.objects.filter(journal=journal).exists():
-            salt = generate_random_salt()
-            RQCJournalSalt.objects.create(journal=journal, salt=salt)
-            logger.info('Set rqc_journal salt to: %s for journal: %s', salt, journal.name)  #TODO From a security standpoint is this ok? Test later.
 
 def hook_registry():
     Rqc_adapterPlugin.hook_registry()

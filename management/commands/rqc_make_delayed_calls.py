@@ -52,11 +52,13 @@ class Command(BaseCommand):
                 logger.info(f"Delayed call to RQC was attempted for article {article_id}:{article.title}.")
                 call.remaining_tries = call.remaining_tries - 1
                 if not response['success']:
+                    logger.info(f"Delayed call to RQC failed for article {article_id}:{article.title}.")
                     call.last_attempt_at = utc_now()
                     call.save()
                     # If a call is unsuccessful we should stop trying for the day.
                     return
                 else:
+                    logger.info(f"Delayed call to RQC succeeded for article {article_id}:{article.title}.")
                     call.delete()
             else:
                 call.delete()
