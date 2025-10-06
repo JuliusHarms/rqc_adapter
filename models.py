@@ -21,7 +21,7 @@ class RQCReviewerOptingDecision(models.Model):
     opting_date = models.DateTimeField(auto_now_add=True, null=False, blank=False)
     reviewer = models.ForeignKey(Account, null=False, blank=False, on_delete=models.CASCADE)
     journal = models.ForeignKey(Journal, null=False, blank=False, on_delete=models.CASCADE)
-
+    #TODO Add unique constraint for year of opting date, reviewer and journal
     @property
     def is_valid(self):
         """
