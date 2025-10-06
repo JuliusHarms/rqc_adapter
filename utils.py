@@ -53,20 +53,19 @@ def get_editorial_decision(article):
     :param article: Article object
     :return: String of the editorial decision
     """
-    if article.is_accepted:
+    if article.is_accepted():
         return 'ACCEPT'
     elif article.date_declined is not None:
         return 'REJECT'
     else:
-        try:
-            revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first()
-            # Conditional accept gets mapped to 'minor revisions' in RQC.
-            if revision_request.type == 'minor_revisions' or revision_request.type == 'conditional_accept':
-                return 'MINORREVISION'
-            else:
-                return 'MAJORREVISION'
-        except RevisionRequest.DoesNotExist:
+        revision_request = RevisionRequest.objects.filter(article=article).order_by('-date_requested').first()
+        if revision_request is None:
             return ''
+        # Conditional accept gets mapped to 'minor revisions' in RQC.
+        if revision_request.type == 'minor_revisions' or revision_request.type == 'conditional_accept':
+            return 'MINORREVISION'
+        else:
+            return 'MAJORREVISION'
 
 def create_pseudo_address(email, salt):
     """

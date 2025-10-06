@@ -152,7 +152,7 @@ def get_editors_info(article):
         # Draft decision can be sent to chief editors even if they aren't assigned to the submission
         # Since they are involved in making the editorial decision they should be included.
         if draft.editor:
-            info = get_editor_info(draft.chief_editor, 3)
+            info = get_editor_info(draft.editor, 3)
             key = (info['email'], info['level'])
             if key not in seen:
                 seen.add(key)
