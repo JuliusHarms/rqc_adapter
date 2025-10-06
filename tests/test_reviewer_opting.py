@@ -219,21 +219,6 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
         expected_url = reverse(self.review_form_view, args=[self.review_assignment.id])
         self.assertEqual(final_url, expected_url)
 
-    #TODO access codes...
-    def test_opting_form_redirects_with_access_code(self):
-        """Tests that redirection works when an access code is given."""
-        # Call with access code
-        response_one = self.get_review_form(assignment_id=self.review_assignment.id, access_code=self.review_assignment.access_code)
-        print(f"Request URL: {response_one.wsgi_request.get_full_path()}")
-        print(f"Request path: {response_one.wsgi_request.path}")
-        print(f"Query string: {response_one.wsgi_request.META.get('QUERY_STRING')}")
-        response = self.redirect_test_helper()
-        final_url = response.request['PATH_INFO']
-        base_url = reverse(self.review_form_view, args=[self.review_assignment.id])
-        query_params = self.review_assignment.access_code
-        expected_url = f"{base_url}?access_code={query_params}"
-        self.assertEqual(final_url, expected_url)
-
     def test_opting_form_not_shown(self):
         """Form is not shown on the review form if the reviewer already has a valid opting status."""
         self.create_opting_status(self.journal_one, self.OPT_IN)

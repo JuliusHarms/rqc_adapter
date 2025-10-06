@@ -55,7 +55,7 @@ def get_editorial_decision(article):
     """
     if article.is_accepted:
         return 'ACCEPT'
-    elif article.date_declined is not None: #TODO correct?
+    elif article.date_declined is not None:
         return 'REJECT'
     else:
         try:

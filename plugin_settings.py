@@ -63,8 +63,6 @@ def hook_registry():
         }
     }
 
-
-# TODO test out what happens if you request revisions on an article
 def register_for_events():
     # The RQC API requires an implicit call when the editorial decision
     # for an article is changed
@@ -83,13 +81,6 @@ def register_for_events():
     # TODO Currently does not work. The event doesn't get raised!
     events_logic.Events.register_for_event(
         Events.ON_REVISIONS_REQUESTED,
-        implicit_call_mhs_submission,
-    )
-    # Stand-In for ON_REVISIONS_REQUESTED event. Works and should be called
-    # most of the time when revisions are requested.
-    # TODO: Remove when ON_REVISIONS_REQUESTED Event works
-    events_logic.Events.register_for_event(
-        Events.ON_REVISIONS_REQUESTED_NOTIFY,
         implicit_call_mhs_submission,
     )
     events_logic.Events.register_for_event(

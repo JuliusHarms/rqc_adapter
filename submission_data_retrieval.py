@@ -62,7 +62,7 @@ def fetch_post_data(article, journal, mhs_submissionpage = '', is_interactive = 
 
     submission_data['review_set'] = get_reviews_info(article, journal)
 
-    submission_data['decision'] = get_editorial_decision(article)  # TODO redo revision request by querying for revisionrequest objects -> prob fine but add test for it
+    submission_data['decision'] = get_editorial_decision(article)
     return submission_data
 
 
@@ -281,7 +281,7 @@ def get_attachment(article, review_file):
     :return: list of dicts {filename: str, data: str}
     """
     attachment_set = []
-    # File size should me no larger than 64mb
+    # File size should be no larger than 64mb
     if review_file is not None and not review_file.is_remote and review_file.get_file_size(article) <= 67108864:
         attachment_set.append({
             'filename': review_file.original_filename,

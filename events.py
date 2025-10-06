@@ -79,7 +79,9 @@ def create_review_assignment_opting_decision(**kwargs):
         if decision is not None:
             opting_status = decision.opting_status
             RQCReviewerOptingDecisionForReviewAssignment.objects.get_or_create(review_assignment=review_assignment,
-                                                            opting_status=opting_status)
+                                                            opting_status=opting_status,
+                                                            # Save decision for auditing purposes
+                                                            decision_record=decision)
         else:
             # Create with default status of undefined
             RQCReviewerOptingDecisionForReviewAssignment.objects.get_or_create(review_assignment=review_assignment)

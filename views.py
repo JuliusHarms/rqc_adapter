@@ -164,7 +164,7 @@ def set_reviewer_opting_status(request):
         if form.is_valid():
             opting_status = form.cleaned_data['status_selection_field']
             user = request.user
-            RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, journal= request.journal, defaults={'opting_status': opting_status, 'opting_date': utc_now()})
+            decision, created = RQCReviewerOptingDecision.objects.update_or_create(reviewer = user, journal= request.journal, defaults={'opting_status': opting_status, 'opting_date': utc_now()})
             if opting_status == RQCReviewerOptingDecision.OptingChoices.OPT_IN:
                 messages.info(request, 'Thank you for choosing to participate in RQC!')
             else:
@@ -206,7 +206,7 @@ def set_reviewer_opting_status(request):
                     review_assignment__is_complete=False,
                     review_assignment__date_declined__isnull=True,
                     review_assignment__date_accepted__isnull=False
-                ).update(opting_status=opting_status)
+                ).update(opting_status=opting_status, decision_record=decision)
 
                 return redirect(
                     logic.generate_access_code_url("do_review", assignment, access_code)

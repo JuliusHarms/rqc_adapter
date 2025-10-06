@@ -31,6 +31,9 @@ from utils.testing import helpers
     }
 )
 class RQCAdapterBaseTestCase(TestCase):
+    """
+    Base TestCase for RQCAdapter that sets up data and provides utilities
+    """
 
     OPT_IN = RQCReviewerOptingDecision.OptingChoices.OPT_IN
     OPT_OUT = RQCReviewerOptingDecision.OptingChoices.OPT_OUT
