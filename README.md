@@ -44,11 +44,32 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
    ```bash
    python3 manage.py rqc_install_cronjob --action install
    ```
-   - Make sure you have cron and crontab installed
-   - You can customize the time at which the cronjob will run by adding the `--time` argument with a number between 0-23 (default is 8 for 8am)
-   - Example: `python3 manage.py rqc_install_cronjob --action install --time 10`
-   - You need to make sure python is available to cron.
-5. Restart your server (Apache, Passenger, etc)
+5. Configure Cron Environment (Optional)
+    If you already use cron with Janeway, your existing setup should work and you can skip this step.
+    If this is your first cron job for Janeway, you must configure the cron environment so it can access Python, Django, your database, and Janeway settings.
+    Edit your crontab:
+    ```bash
+    crontab -e
+   ```
+    Add these environment variables at the top of the file (adjust values for your setup):
+    ```bash
+    SHELL=/bin/bash
+    HOME=/vol/janeway/src
+    PATH=/usr/local/bin:/usr/bin:/bin
+    PYTHONPATH=/vol/janeway/src
+    JANEWAY_SETTINGS_MODULE=core.janeway_global_settings
+
+    # Database configuration (adjust for your environment)
+    DB_VENDOR=postgres
+    DB_NAME=janeway
+    DB_USER=janeway-web
+    DB_PASSWORD=janeway-web
+    DB_HOST=janeway-postgres
+    DB_PORT=5432
+    After configuration, your crontab should include an entry like:
+    * * * * * /vol/janeway/src/manage.py rqc_make_delayed_calls
+   ```
+6. Restart your server (Apache, Passenger, etc)
 
 ### 3.2 Journal Setup
 
@@ -88,9 +109,6 @@ Janeway's "Conditional Accept" is transmitted to RQC as a minor revision request
 Attachments uploaded by reviewers are not yet transmitted to RQC.
 
 Currently Janeway does not fire the `ON_REVISIONS_REQUESTED` event which means the plugin cannot send a call to RQC when revisions are requested.
-
-The `rqc_install_cronjob` command does not function as intended. Depending on your cron 
-setup the cron job might not be able to execute.
 
 ## 6. Current Implementation Status
 
