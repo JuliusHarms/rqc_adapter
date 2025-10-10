@@ -63,7 +63,7 @@ def render_reviewer_opting_form(context):
     # Don't display anything. For instance if "One-Click-Access" is enabled.
     if not user.is_authenticated:
         if has_api_credentials:
-            return '<p>This journal uses Review Quality Collector.</p>'
+            return '<p>This journal uses Review Quality Collector. Login is required to participate.</p>'
         else:
             return ''
     if has_api_credentials and not has_opted_in_or_out(user, journal):
