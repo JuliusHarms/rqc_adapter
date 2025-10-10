@@ -72,7 +72,7 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
     After configuration, your crontab should include an entry like:
 
     ```bash
-    * 8 * * * /vol/janeway/src/manage.py rqc_make_delayed_calls
+    0 8 * * * /vol/janeway/src/manage.py rqc_make_delayed_calls
    ```
 6. Restart your server (Apache, Passenger, etc)
 
