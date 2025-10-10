@@ -97,6 +97,7 @@ You will then be told if the given credentials could be validated by the RQC ser
 RQC distinguishes between level 1, 2 and 3 editors. This is mapped to Janeway's editor types in the following way:
 
   **Level 1 editors:** Section editors that are assigned to the submission
+
   **Level 2:** Currently no roles in Janeway get labeled as level 2 editors.
 
   **Level 3:** Editors that are assigned to the submission or that are involved in making the editorial decision regarding the submission 
