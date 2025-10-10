@@ -68,7 +68,10 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
     DB_PASSWORD=janeway-web
     DB_HOST=janeway-postgres
     DB_PORT=5432
+   ```
     After configuration, your crontab should include an entry like:
+
+    ```bash
     * * * * * /vol/janeway/src/manage.py rqc_make_delayed_calls
    ```
 6. Restart your server (Apache, Passenger, etc)
