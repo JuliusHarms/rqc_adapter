@@ -15,7 +15,7 @@ from django.utils import timezone
 
 from plugins.rqc_adapter.events import implicit_call_mhs_submission
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, \
-    RQCReviewerOptingDecisionForReviewAssignment, RQCDelayedCall, RQCCall
+    RQCReviewerOptingDecisionForReviewAssignment, RQCDelayedCall, RQCCall, RQCJournalAPICredentials
 from plugins.rqc_adapter.rqc_calls import RQCErrorCodes
 from plugins.rqc_adapter.tests.base_test import RQCAdapterBaseTestCase
 from django.urls import reverse
@@ -227,6 +227,23 @@ class TestExplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
             else:
                 self.assertEqual(editorial_decision, 'MAJORREVISION')
 
+    def test_submit_review_dialog_included(self):
+        """Test that grading action dialog is shown when reviews are present"""
+        response = self.get_review_management(self.active_article.pk)
+        self.assertTemplateUsed(response, 'rqc_adapter/grading_action.html')
+
+    def test_submit_review_dialog_excluded(self):
+        """Test that grading action dialog is not shown when reviews are not present"""
+        response = self.get_review_management(self.active_article_two.pk)
+        self.assertTemplateNotUsed(response, 'rqc_adapter/grading_action.html')
+
+    def test_submit_review_dialog_excluded_no_api_credentials(self):
+        """Test that grading action dialog is not shown when api credentials are missing"""
+        RQCJournalAPICredentials.objects.filter(journal=self.journal_one).delete()
+        response = self.get_review_management(self.active_article_two.pk)
+        self.assertTemplateNotUsed(response, 'rqc_adapter/grading_action.html')
+
+
 class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
 
     make_editorial_decision_view = 'review_decision'
@@ -250,7 +267,7 @@ class TestImplicitCalls(TestCallsToMHSSubmissionEndpointMocked):
         self.mock_call.assert_called()
 
     def tests_that_interactive_user_is_not_set(self):
-        """Test that interactive user is not set when making implicit call"""
+        """Test that interactive user is not set when making an implicit call"""
         kwargs = {
             'article': self.active_article,
             'request': None

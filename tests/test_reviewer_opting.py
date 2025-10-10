@@ -10,6 +10,7 @@ from django.utils import timezone
 from plugins.rqc_adapter.models import RQCReviewerOptingDecision, RQCJournalAPICredentials, \
     RQCReviewerOptingDecisionForReviewAssignment
 from plugins.rqc_adapter.tests.base_test import RQCAdapterBaseTestCase
+from review.views import accept_review_request
 from utils.testing import helpers
 
 class TestReviewerOpting(RQCAdapterBaseTestCase):
@@ -17,6 +18,7 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
     review_form_template = 'review/review_form.html'
     opting_form_template = 'rqc_adapter/reviewer_opting_form.html'
     opting_from_post_view = 'rqc_adapter_set_reviewer_opting_status'
+    accept_review_request_view = 'accept_review'
 
     post_opting_form_url = reverse(opting_from_post_view)
 
@@ -261,4 +263,49 @@ class TestReviewerOpting(RQCAdapterBaseTestCase):
         # from being called.
         mock_set_opting_status.assert_not_called()
 
+    def prepare_review_assignment(self):
+        self.review_assignment.date_accepted = None
+        self.is_complete = False
+        self.review_assignment.save()
 
+
+    def test_opting_for_review_assignment_created_with_opt_in(self):
+        """Test that RQCOptingDecisionForReviewAssignment is created when review request is accepted."""
+        self.prepare_review_assignment()
+        opting_decision = self.create_opting_status(self.journal_one, self.OPT_IN)
+        self.client.post(reverse(self.accept_review_request_view,args=[ self.review_assignment.pk]))
+        self.assertTrue(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+            review_assignment=self.review_assignment,
+            opting_status=self.OPT_IN,
+            decision_record=opting_decision,
+        ).exists())
+
+    def test_opting_for_review_assignment_created_with_opt_out(self):
+        """Test that RQCOptingDecisionForReviewAssignment is created when review request is accepted."""
+        self.prepare_review_assignment()
+        opting_decision = self.create_opting_status(self.journal_one, self.OPT_OUT)
+        self.client.post(reverse(self.accept_review_request_view, args=[self.review_assignment.id]))
+        self.assertTrue(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+            review_assignment=self.review_assignment,
+            opting_status=self.OPT_OUT,
+            decision_record=opting_decision,
+        ).exists())
+
+    def test_opting_for_review_assignment_created_with_undefined(self):
+        """Test that RQCOptingDecisionForReviewAssignment is created when review request is accepted."""
+        self.prepare_review_assignment()
+        self.client.post(reverse(self.accept_review_request_view, args=[self.review_assignment.pk]))
+        self.assertTrue(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+            review_assignment=self.review_assignment,
+            opting_status=self.UNDEFINED,
+        ).exists())
+
+    def test_opting_for_review_assignment_not_created_without_credentials(self):
+        self.prepare_review_assignment()
+        """Test that RQCOptingDecisionForReviewAssignment is not created when credentials are not provided."""
+        RQCJournalAPICredentials.objects.all().delete()
+        self.client.post(reverse(self.accept_review_request_view, args=[self.review_assignment.pk]))
+        self.assertFalse(RQCReviewerOptingDecisionForReviewAssignment.objects.filter(
+            review_assignment=self.review_assignment,
+            opting_status=self.UNDEFINED,
+        ).exists())

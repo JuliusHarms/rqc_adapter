@@ -172,6 +172,17 @@ class RQCAdapterBaseTestCase(TestCase):
         cls.active_article.authors.add(cls.author)
         cls.active_article.save()
 
+        # Create second article without reviews
+        cls.active_article_two = helpers.create_article(
+            journal=cls.journal_one,
+            title = 'Active Article 2',
+            stage = submission.models.STAGE_UNDER_REVIEW,
+            date_submitted = datetime.now(timezone.utc) - timedelta(weeks=3),
+            correspondence_author = cls.author,
+        )
+        cls.active_article_two.authors.add(cls.author)
+        cls.active_article_two.save()
+
         # Add section editor to article section
         cls.active_article.section.section_editors.add(cls.section_editor)
         cls.active_article.section.editors.add(cls.chief_editor)
