@@ -98,8 +98,9 @@ RQC distinguishes between level 1, 2 and 3 editors. This is mapped to Janeway's 
 
   **Level 1 editors:** Section editors that are assigned to the submission
   **Level 2:** Currently no roles in Janeway get labeled as level 2 editors.
-  **Level 3:** Editors that are assigned to the submission or that are involved in grading the submission 
-   via DraftDecisions
+
+  **Level 3:** Editors that are assigned to the submission or that are involved in making the editorial decision regarding the submission 
+   via DraftDecisions.
 
 Which editors are contacted for grading by RQC and when can be set on the RQC website.
 
