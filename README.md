@@ -40,7 +40,7 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
    ```bash
    python3 manage.py migrate
    ```
-4. Install the cronjob:
+4. Install the cron job (activate your Python virtual environment first, if you’re using one):
    ```bash
    python3 manage.py rqc_install_cronjob --action install
    ```
