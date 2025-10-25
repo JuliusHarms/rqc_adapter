@@ -57,7 +57,7 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
     ```bash
     SHELL=/bin/bash
     PATH=/usr/local/bin:/usr/bin:/bin
-    PYTHONPATH=/vol/janeway/src
+    PYTHONPATH= /path/to/janeway/src
     JANEWAY_SETTINGS_MODULE=core.janeway_global_settings
 
     # Database configuration (adjust for your environment)
