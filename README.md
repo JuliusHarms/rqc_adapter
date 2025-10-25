@@ -47,7 +47,7 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
 5. Configure Cron Environment (Optional)
 
     If you already use cron with Janeway, your existing setup should work and you can skip this step.
-    If this is your first cron job for Janeway, you must configure the cron environment so it can access Python, Django, your database, and Janeway settings.
+    If this is your first cron job for Janeway, you must configure the cron environment so cron can access Python, Django, your database, and Janeway settings.
     Edit your crontab:
 
     ```bash
