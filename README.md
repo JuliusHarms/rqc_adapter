@@ -56,7 +56,6 @@ This repository is a Janeway plugin that realizes a Janeway adapter for the RQC 
     Add these environment variables at the top of the file (adjust values for your setup):
     ```bash
     SHELL=/bin/bash
-    HOME=/vol/janeway/src
     PATH=/usr/local/bin:/usr/bin:/bin
     PYTHONPATH=/vol/janeway/src
     JANEWAY_SETTINGS_MODULE=core.janeway_global_settings
