@@ -2,12 +2,8 @@
 © Julius Harms, Freie Universität Berlin 2025
 """
 from plugins.rqc_adapter.events import create_review_assignment_opting_decision, implicit_call_mhs_submission
-from plugins.rqc_adapter.models import RQCJournalSalt
-from plugins.rqc_adapter.utils import generate_random_salt
 from utils import plugins
 from utils.logger import get_logger
-from utils.install import update_settings
-from journal.models import Journal
 from events import logic as events_logic
 from events.logic import Events
 
@@ -23,7 +19,7 @@ JANEWAY_VERSION = "1.8.0"
 
 logger = get_logger(__name__)
 
-#TODO add logging to CRON if CRON fails
+# TODO add logging to CRON if CRON fails
 
 class Rqc_adapterPlugin(plugins.Plugin):
     plugin_name = PLUGIN_NAME
