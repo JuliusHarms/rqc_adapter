@@ -44,7 +44,7 @@ def implicit_call_mhs_submission(**kwargs) -> dict | None:
     if not article.reviewassignment_set.exists():
         return None
 
-    journal_id = credentials.journal_id
+    journal_id = credentials.rqc_journal_id
     api_key = credentials.api_key
     submission_id = article.pk
     post_data = fetch_post_data(user=None, article=article, journal= journal)
